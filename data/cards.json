@@ -5,7 +5,7 @@
     "amount": 2,
     "power": 4,
     "keywords": ["Poisonous"],
-    "ability_type": "Play",
+    "ability_type": "play",
     "ability_text": "Play: Gain 2 life points."
   },
   {
@@ -14,7 +14,7 @@
     "amount": 1,
     "power": 5,
     "keywords": [],
-    "ability_type": "Defeated",
+    "ability_type": "defeated",
     "ability_text": "Defeated: Take control of up to two creatures with power 5 or less."
   },
   {
@@ -23,7 +23,7 @@
     "amount": 2,
     "power": 7,
     "keywords": [],
-    "ability_type": "Play",
+    "ability_type": "play",
     "ability_text": "Play: Defeat all enemy creatures with power 4 or less."
   },
   {
@@ -32,7 +32,7 @@
     "amount": 2,
     "power": 4,
     "keywords": ["Tough"],
-    "ability_type": "Passive",
+    "ability_type": "passive",
     "ability_text": "Other allied creatures have +1 power."
   },
   {
@@ -41,7 +41,7 @@
     "amount": 2,
     "power": 8,
     "keywords": [],
-    "ability_type": "Attack",
+    "ability_type": "attack",
     "ability_text": "Attack: The opponent discards a card."
   }
 ]

@@ -2,32 +2,24 @@ from typing import List
 from src.models.card import Card
 
 class Player:
-    def __init__(self, name: str, starting_life: int = 3, starting_mindbugs: int = 2) -> None:
+    def __init__(self, id: str, deck: List[Card] = [], hand: List[Card] = [], 
+                 discard_pile: List[Card] = [], play_area: List[Card] = [],
+                 life_points: int = 3, mindbugs: int = 2) -> None:
         """
         Initialize a new player.
         
         Args:
-            name: The player's name
+            id: The player's id
             starting_life: Initial life points
             starting_mindbugs: Initial number of mindbugs
         """
-        self.name: str = name
-        self.hand: List[Card] = []
-        self.deck: List[Card] = []
-        self.discard_pile: List[Card] = []
-        self.play_area: List[Card] = []
-        self.life_points: int = starting_life
-        self.mindbugs_remaining: int = starting_mindbugs
-
-    def create_deck(self, source_deck: List[Card], size: int = 10) -> None:
-        """
-        Create a deck of cards for the player.
-        
-        Args:
-            source_deck: Source deck to draw from
-            size: Number of cards to include in the deck
-        """
-        self.deck = source_deck[:size]
+        self.id: str = id
+        self.hand: List[Card] = hand
+        self.deck: List[Card] = deck
+        self.discard_pile: List[Card] = discard_pile
+        self.play_area: List[Card] = play_area
+        self.life_points: int = life_points
+        self.mindbugs: int = mindbugs
     
     def draw_card(self, count: int = 1) -> List[Card]:
         """
@@ -127,4 +119,21 @@ class Player:
         return False
     
     def __str__(self) -> str:
-        return f"Player {self.name}: {len(self.hand)} cards in hand, {self.life_points} life, {self.mindbugs_remaining} mindbugs"
+        return f"Player {self.id}: {len(self.hand)} cards in hand, {self.life_points} life, {self.mindbugs_remaining} mindbugs"
+    
+    def copy(self) -> 'Player':
+        """
+        Create a deep copy of the player.
+        
+        Returns:
+            Player: A new Player object with the same attributes
+        """
+        return Player(
+            id=self.id,
+            deck=self.deck.copy(),
+            hand=self.hand.copy(),
+            discard_pile=self.discard_pile.copy(),
+            play_area=self.play_area.copy(),
+            life_points=self.life_points,
+            mindbugs=self.mindbugs
+        )

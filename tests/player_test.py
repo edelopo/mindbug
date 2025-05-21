@@ -17,12 +17,12 @@ def run_player_test():
     print("--- Starting Player Class Test ---")
     try:
         # Create a player instance
-        player = Player(name="Test Player")
-        print(f"Created player: {player.name}")
+        player = Player(id="f13b3e")
+        print(f"Created player: {player.id}")
         
         # Test initial state
         print(f"Initial life points: {player.life_points}")
-        print(f"Initial mindbugs: {player.mindbugs_remaining}")
+        print(f"Initial mindbugs: {player.mindbugs}")
         print(f"Initial hand size: {len(player.hand)}")
         print(f"Initial deck size: {len(player.deck)}")
 
@@ -34,7 +34,7 @@ def run_player_test():
         json_filepath = os.path.join(project_root, 'data', 'cards.json')
 
         cards = load_cards_from_json(json_filepath)
-        player.create_deck(cards, size=len(cards))
+        player.deck = cards
         
         print(f"Deck size after adding cards: {len(player.deck)}")
         assert len(player.deck) == len(cards), "Deck size should match number of added cards"
