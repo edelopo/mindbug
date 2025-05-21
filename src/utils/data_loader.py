@@ -1,8 +1,9 @@
 import json
 import os
+from typing import Dict
 from src.models.card import Card
 
-def load_cards_from_json(filepath=None):
+def load_cards_from_json(filepath=None) -> Dict[str, Card]:
     """
     Loads card definitions from a JSON file and returns a dictionary
     of Card objects, keyed by their 'id'.

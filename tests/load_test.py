@@ -18,7 +18,7 @@ def run_card_loading_test():
         project_root = os.path.dirname(current_script_dir)  # Go up to the project root
         json_filepath = os.path.join(project_root, 'data', 'cards.json')
 
-        cards = load_cards_from_json(filepath=json_filepath)
+        cards = load_cards_from_json(json_filepath)
 
         print(f"\nSuccessfully loaded {len(cards)} cards.")
         print("\n--- Details of loaded cards: ---")

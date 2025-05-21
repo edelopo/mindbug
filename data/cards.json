@@ -43,14 +43,5 @@
     "keywords": [],
     "ability_type": "Attack",
     "ability_text": "Attack: The opponent discards a card."
-  },
-  {
-    "id": "mindbug",
-    "name": "Mindbug",
-    "amount": 2,
-    "power": 0,
-    "keywords": [],
-    "ability_type": "Special",
-    "ability_text": "Used to take control of an opponent's creature."
   }
 ]
