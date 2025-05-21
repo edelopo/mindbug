@@ -1,5 +1,8 @@
+from typing import List
+from src.models.card import Card
+
 class Player:
-    def __init__(self, name, starting_life=3, starting_mindbugs=2):
+    def __init__(self, name: str, starting_life: int = 3, starting_mindbugs: int = 2) -> None:
         """
         Initialize a new player.
         
@@ -8,15 +11,25 @@ class Player:
             starting_life (int): Initial life points
             starting_mindbugs (int): Initial number of mindbugs
         """
-        self.name = name
-        self.hand = []
-        self.deck = []
-        self.discard_pile = []
-        self.play_area = []
-        self.life_points = starting_life
-        self.mindbugs_remaining = starting_mindbugs
+        self.name: str = name
+        self.hand: List[Card] = []
+        self.deck: List[Card] = []
+        self.discard_pile: List[Card] = []
+        self.play_area: List[Card] = []
+        self.life_points: int = starting_life
+        self.mindbugs_remaining: int = starting_mindbugs
+
+    def create_deck(self, source_deck: List[Card], size: int = 10) -> None:
+        """
+        Create a deck of cards for the player.
+        
+        Args:
+            source_deck (list): Source deck to draw from
+            size (int): Number of cards to include in the deck
+        """
+        self.deck = source_deck[:size]
     
-    def draw_card(self, count=1):
+    def draw_card(self, count: int = 1) -> List[Card]:
         """
         Draw cards from the top of the deck.
         
@@ -26,7 +39,7 @@ class Player:
         Returns:
             list: Cards that were drawn
         """
-        drawn_cards = []
+        drawn_cards: List[Card] = []
         for _ in range(min(count, len(self.deck))):
             if self.deck:
                 card = self.deck.pop(0)  # Take from the top of the deck
@@ -34,7 +47,7 @@ class Player:
                 drawn_cards.append(card)
         return drawn_cards
     
-    def discard_card(self, card):
+    def discard_card(self, card: Card) -> bool:
         """
         Discard a card from hand to discard pile.
         
@@ -50,7 +63,7 @@ class Player:
             return True
         return False
     
-    def add_to_hand(self, card):
+    def add_to_hand(self, card: Card) -> None:
         """
         Add a card to the player's hand.
         
@@ -59,7 +72,7 @@ class Player:
         """
         self.hand.append(card)
     
-    def lose_life(self, amount=1):
+    def lose_life(self, amount: int = 1) -> int:
         """
         Player loses life points.
         
@@ -72,7 +85,7 @@ class Player:
         self.life_points = max(0, self.life_points - amount)
         return self.life_points
     
-    def gain_life(self, amount=1):
+    def gain_life(self, amount: int = 1) -> int:
         """
         Player gains life points.
         
@@ -85,7 +98,7 @@ class Player:
         self.life_points += amount
         return self.life_points
     
-    def use_mindbug(self):
+    def use_mindbug(self) -> bool:
         """
         Use a mindbug ability.
         
@@ -97,7 +110,7 @@ class Player:
             return True
         return False
     
-    def play_card(self, card):
+    def play_card(self, card: Card) -> bool:
         """
         Play a card from hand to play area.
         
@@ -113,5 +126,5 @@ class Player:
             return True
         return False
     
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Player {self.name}: {len(self.hand)} cards in hand, {self.life_points} life, {self.mindbugs_remaining} mindbugs"

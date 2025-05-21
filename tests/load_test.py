@@ -22,7 +22,7 @@ def run_card_loading_test():
 
         print(f"\nSuccessfully loaded {len(cards)} cards.")
         print("\n--- Details of loaded cards: ---")
-        for card_id, card in cards.items():
+        for card in cards:
             print(f"- {card.name} (ID: {card.id})")
             print(f"  Power: {card.power}")
             print(f"  Keywords: {', '.join(card.keywords) if card.keywords else 'None'}")
@@ -39,7 +39,7 @@ def run_card_loading_test():
         print("\n--- Card data loading test PASSED! ---")
 
         print("\n--- Starting Card Printing Test ---")
-        for card_id, card in cards.items():
+        for card in cards:
             print(card)
 
         print("\n--- Card printing test PASSED! ---")

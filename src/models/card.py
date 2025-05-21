@@ -1,8 +1,8 @@
-from typing import Set, Dict, Optional, Any
+from typing import List, Dict, Optional, Any
 
 class Card:
     def __init__(self, card_id: Optional[str] = None, name: Optional[str] = None, 
-                 power: Optional[int] = None, keywords: Optional[Set[str]] = None,
+                 power: Optional[int] = None, keywords: Optional[List[str]] = None,
                  ability_type: Optional[str] = None, ability_text: Optional[str] = None) -> None:
         """
         Initialize a Card object with data from cards.json
@@ -11,14 +11,14 @@ class Card:
             card_id (str): Unique identifier for the card
             name (str): Name of the card
             power (int): Power value for creatures
-            keywords (list): List of card keywords (e.g., poisonous, tough)
+            keywords (List[str]): List of card keywords (e.g., poisonous, tough)
             ability_type (str): Type of ability (e.g., attack, passive)
             ability_text (str): Text description of the card
         """
         self.id: Optional[str] = card_id
         self.name: Optional[str] = name
         self.power: Optional[int] = power
-        self.keywords: Set[str] = keywords or set()
+        self.keywords: List[str] = keywords or []
         self.ability_type: Optional[str] = ability_type
         self.ability_text: Optional[str] = ability_text
     
@@ -37,7 +37,7 @@ class Card:
             card_id = data.get('id'),
             name = data.get('name'),
             power = data.get('power'),
-            keywords = set(data.get('keywords', [])),
+            keywords = data.get('keywords', []),
             ability_type = data.get('ability_type'),
             ability_text = data.get('ability_text')
         )

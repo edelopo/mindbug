@@ -6,6 +6,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.models.player import Player
+from src.utils.data_loader import load_cards_from_json
 import traceback
 
 def run_player_test():
@@ -24,6 +25,19 @@ def run_player_test():
         print(f"Initial mindbugs: {player.mindbugs_remaining}")
         print(f"Initial hand size: {len(player.hand)}")
         print(f"Initial deck size: {len(player.deck)}")
+
+        # Test adding cards to deck
+        # Since we're running from src/tests, we need to go up one level to reach the project root
+        print("\n--- Testing create_deck method ---")
+        current_script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_script_dir)  # Go up to the project root
+        json_filepath = os.path.join(project_root, 'data', 'cards.json')
+
+        cards = load_cards_from_json(json_filepath)
+        player.create_deck(cards, size=len(cards))
+        
+        print(f"Deck size after adding cards: {len(player.deck)}")
+        assert len(player.deck) == len(cards), "Deck size should match number of added cards"
         
         # Test drawing cards
         print("\n--- Testing draw_card method ---")
@@ -40,11 +54,13 @@ def run_player_test():
         drawn_cards = player.draw_card(cards_to_draw)
         print(f"Drew {len(drawn_cards)} cards")
         assert len(player.hand) == initial_hand_size + cards_to_draw, f"Hand should have {cards_to_draw} more cards"
+
+        print(f"Hand after drawing: {player.hand}")
         
         # Test discarding a card
         print("\n--- Testing discard_card method ---")
         if player.hand:
-            card_to_discard = player.hand[0]
+            card_to_discard = player.hand[-1]
             print(f"Discarding card: {card_to_discard}")
             player.discard_card(card_to_discard)
             print(f"Hand size after discarding: {len(player.hand)}")
