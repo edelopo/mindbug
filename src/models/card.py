@@ -32,12 +32,12 @@ class Card:
             Card: A new Card instance
         """
         return cls(
-            card_id=data.get('id'),
-            name=data.get('name'),
-            power=data.get('power'),
-            keywords=data.get('keywords'),
-            ability_type=data.get('ability_type'),
-            ability_text=data.get('ability_text')
+            card_id = data.get('id'),
+            name = data.get('name'),
+            power = data.get('power'),
+            keywords = set(data.get('keywords', [])),
+            ability_type = data.get('ability_type'),
+            ability_text = data.get('ability_text')
         )
     
     def __repr__(self):
@@ -48,3 +48,11 @@ class Card:
             str: A formatted string with card information
         """
         return f"Card(ID: {self.id}, Name: '{self.name}', Power: {self.power}, Keywords: {self.keywords}, Abilities: {self.ability_text})"
+    
+    def __eq__(self, other):
+        if not isinstance(other, Card):
+            return NotImplemented
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
