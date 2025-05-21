@@ -1,7 +1,6 @@
 # # src/models/game_state.py
 # import random
-# from collections import deque # Deque is good for efficient popping from either end
-# from typing import Dict, List, Optional, Tuple # For type hints
+# from typing import Dict, List, Optional # For type hints
 # from src.models.player import Player
 # from src.models.card import Card
 
@@ -12,9 +11,6 @@
 #                  players: Dict[str, Player],
 #                  turn_count: int,
 #                  phase: str,
-#                  battlefield: Dict[str, List[Creature]], # Player ID -> List of Creatures
-#                  discard_pile: List[Card], # Central discard pile
-#                  unused_pile: List[Card], # Cards not in decks/hands/discard for life tracking
 #                  game_over: bool = False,
 #                  winner_id: Optional[str] = None):
 #         """
@@ -22,14 +18,10 @@
 
 #         Args:
 #             active_player_id: The ID of the player whose turn it currently is.
-#             inactive_player_id: The ID of the player not currently acting.
+#             inactive_player_id: The ID of the other player.
 #             players: A dictionary mapping player IDs to Player objects.
 #             turn_count: The current turn number.
-#             phase: The current phase of the turn (e.g., "draw", "play", "attack", "end").
-#             battlefield: A dictionary mapping player IDs to a list of creatures
-#                          currently on their battlefield.
-#             discard_pile: A central list of cards in the discard pile.
-#             unused_pile: A central list of cards not in play, used for life tracking.
+#             phase: The current phase of the turn (e.g., "draw", "play", "resolve", "end").
 #             game_over: Boolean indicating if the game has ended.
 #             winner_id: The ID of the winning player, if game_over is True.
 #         """
@@ -38,9 +30,6 @@
 #         self.players = players
 #         self.turn_count = turn_count
 #         self.phase = phase
-#         self.battlefield = battlefield
-#         self.discard_pile = discard_pile
-#         self.unused_pile = unused_pile
 #         self.game_over = game_over
 #         self.winner_id = winner_id
 
@@ -65,14 +54,13 @@
 #         Returns:
 #             A new GameState object representing the beginning of the game.
 #         """
-#         # Ensure 'mindbug' card is always available and separate it
-#         mindbug_card = all_available_cards.get('mindbug')
-#         if not mindbug_card:
-#             raise ValueError("The 'mindbug' card must be present in all_available_cards for game setup.")
 
-#         # Filter out the Mindbug card for creature deck generation
-#         creature_cards = [card for card_id, card in all_available_cards.items() if card_id != 'mindbug']
-#         random.shuffle(creature_cards)
+#         # Create the commond deck of cards
+#         cards = []
+#         for card_id, card in all_available_cards.items():
+#             for _ in range(card.count):
+#                 cards.append(card.copy())
+#         random.shuffle(cards)
 
 #         # Distribute creature cards to decks
 #         if len(creature_cards) < num_creatures_per_deck * 2:

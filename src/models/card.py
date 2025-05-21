@@ -8,12 +8,12 @@ class Card:
         Initialize a Card object with data from cards.json
         
         Args:
-            card_id (str): Unique identifier for the card
-            name (str): Name of the card
-            power (int): Power value for creatures
-            keywords (List[str]): List of card keywords (e.g., poisonous, tough)
-            ability_type (str): Type of ability (e.g., attack, passive)
-            ability_text (str): Text description of the card
+            card_id: Unique identifier for the card
+            name: Name of the card
+            power: Power value for creatures
+            keywords: List of card keywords (e.g., poisonous, tough)
+            ability_type: Type of ability (e.g., attack, passive)
+            ability_text: Text description of the card
         """
         self.id: Optional[str] = card_id
         self.name: Optional[str] = name
@@ -28,7 +28,7 @@ class Card:
         Create a Card instance from a dictionary (typically from JSON)
         
         Args:
-            data (dict): Dictionary containing card data
+            data: Dictionary containing card data
             
         Returns:
             Card: A new Card instance
@@ -50,11 +50,3 @@ class Card:
             str: A formatted string with card information
         """
         return f"Card(ID: {self.id}, Name: '{self.name}', Power: {self.power}, Keywords: {self.keywords}, Abilities: {self.ability_text})"
-    
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Card):
-            return NotImplemented
-        return self.id == other.id
-
-    def __hash__(self) -> int:
-        return hash(self.id)

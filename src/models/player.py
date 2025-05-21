@@ -7,9 +7,9 @@ class Player:
         Initialize a new player.
         
         Args:
-            name (str): The player's name
-            starting_life (int): Initial life points
-            starting_mindbugs (int): Initial number of mindbugs
+            name: The player's name
+            starting_life: Initial life points
+            starting_mindbugs: Initial number of mindbugs
         """
         self.name: str = name
         self.hand: List[Card] = []
@@ -24,8 +24,8 @@ class Player:
         Create a deck of cards for the player.
         
         Args:
-            source_deck (list): Source deck to draw from
-            size (int): Number of cards to include in the deck
+            source_deck: Source deck to draw from
+            size: Number of cards to include in the deck
         """
         self.deck = source_deck[:size]
     
@@ -34,10 +34,10 @@ class Player:
         Draw cards from the top of the deck.
         
         Args:
-            count (int): Number of cards to draw
+            count: Number of cards to draw
             
         Returns:
-            list: Cards that were drawn
+            List: Cards that were drawn
         """
         drawn_cards: List[Card] = []
         for _ in range(min(count, len(self.deck))):
@@ -77,7 +77,7 @@ class Player:
         Player loses life points.
         
         Args:
-            amount (int): Amount of life to lose
+            amount: Amount of life to lose
             
         Returns:
             int: Current life points after loss
@@ -90,7 +90,7 @@ class Player:
         Player gains life points.
         
         Args:
-            amount (int): Amount of life to gain
+            amount: Amount of life to gain
             
         Returns:
             int: Current life points after gain

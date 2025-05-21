@@ -1,12 +1,13 @@
 import json
 import os
+import copy
 from typing import List
 from src.models.card import Card
 
 def load_cards_from_json(filepath=None) -> List[Card]:
     """
-    Loads card definitions from a JSON file and returns a dictionary
-    of Card objects, keyed by their 'id'.
+    Loads card definitions from a JSON file and returns a list
+    of Card objects, according to their 'amount'.
     """
     if filepath is None:
         # Construct the default path relative to the project root
@@ -26,5 +27,6 @@ def load_cards_from_json(filepath=None) -> List[Card]:
     cards = []
     for card_data in card_data_list:
         card = Card.from_dict(card_data)
-        cards.append(card)
+        for _ in range(card_data.get('amount', 1)):
+            cards.append(copy.deepcopy(card))  # Use deepcopy to ensure unique instances
     return cards
