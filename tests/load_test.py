@@ -1,12 +1,11 @@
 import sys
 import os
 
-# Add the src directory to the Python path
-# This allows you to import modules from src/ like src.utils.data_loader
-# without issues when running from the project root.
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+# Add the main project directory to the Python path
+# Since we're in src/tests, we need to go one level up to access src/utils
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils.data_loader import load_cards_from_json
+from src.utils.data_loader import load_cards_from_json
 
 def run_card_loading_test():
     """
@@ -14,10 +13,10 @@ def run_card_loading_test():
     """
     print("--- Starting Card Data Loading Test ---")
     try:
-        # Assuming cards.json is in data/ relative to the project root
-        # You might need to adjust the path if running from a different directory
-        current_script_dir = os.path.dirname(__file__)
-        json_filepath = os.path.join(current_script_dir, 'data', 'cards.json')
+        # Since we're running from src/tests, we need to go up one level to reach the project root
+        current_script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_script_dir)  # Go up to the project root
+        json_filepath = os.path.join(project_root, 'data', 'cards.json')
 
         cards = load_cards_from_json(filepath=json_filepath)
 
