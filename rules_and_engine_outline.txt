@@ -1,0 +1,33 @@
+Key Points & Remaining Work:
+
+    Phase Management is Crucial: The GameEngine needs to precisely manage the game_state.phase and transition between them.
+        initial_state sets to draw_phase.
+        _handle_play_creature_action might transition to mindbug_response_phase.
+        _handle_mindbug_response transitions back to play_phase (if extra turn) or attack_phase (if normal turn ends).
+        _handle_attack_action transitions to block_phase.
+        _handle_block_action transitions back to attack_phase (if player can attack again) or end_turn_phase.
+        _handle_end_turn_action transitions to the next player's draw_phase.
+
+    GameState Mutable vs. Immutable: I've used new_state = game_state.copy() at the start of apply_action. This means apply_action returns a new state, which is generally better for AI (no side effects on the original state object). However, internal helper functions like _axolotl_healer_play_ability are still modifying the game_state object passed to them. If you want full immutability, every modification would need to create a new object. For now, this hybrid approach (copying at the top level apply_action) is a good balance of performance and safety for AI simulation. Crucially, make sure every object within GameState that holds mutable data (Player, Creature, List, deque, Dict) has a copy() method that performs a deep copy of its own internal mutable data.
+
+    Life Points in Mindbug: I've clarified the life point system based on the Mindbug rules. Each player Player object needs a life_cards: List[Card] attribute initialized with 3 cards from the unused_pile. GameState.initial_state and GameRules.lose_life would need to be updated to manage this. I've made some assumptions for now that Player has life_cards and GameRules.lose_life interacts with it. You'll need to go back and add self.life_cards: List[Card] = [] to your Player.__init__ and populate it in GameState.initial_state from the unused_pile for each player.
+
+    Complex Abilities & Keywords:
+        Frenzy: GameEngine needs to check creature.has_attacked_this_turn and allow a second attack if Frenzy keyword is present and the creature survived.
+        Hunter: When a creature with Hunter attacks, the attacking player chooses which of the opponent's creatures blocks, rather than the opponent choosing. This affects the AttackAction and _handle_attack_action logic.
+        Sneaky: Only Sneaky creatures can block Sneaky creatures. This affects is_creature_valid_blocker.
+        Defeated effects: These are triggered when a creature leaves the battlefield due to defeat (e.g., sent to discard). Your GameEngine's combat resolution (after removing creatures) should call game_rules.activate_defeated_ability.
+        Continuous effects: (e.g., "All other allied creatures get +1 Power"). These modify the game state constantly. You'll need a mechanism (e.g., a method in GameRules like calculate_current_power(creature)) that takes into account all active continuous effects before combat or other checks.
+
+    Game Over Conditions:
+        A player loses if they have no life cards left.
+        A player loses if they cannot take a valid action on their turn (no cards to play, no creatures to attack, no valid abilities to activate).
+
+This implementation provides a solid framework. Your next steps would be:
+
+    Refine Player class: Add self.life_cards: List[Card] = [] and update GameState.initial_state to deal 3 cards from all_available_cards into each player's life_cards pile, then the rest into unused_pile.
+    Test PlayCreatureAction and Mindbug flow: Write a small script to test playing a creature, having the opponent UseMindbugAction or PassMindbugAction, and verifying the creature ends up on the correct battlefield.
+    Implement Attack and Block flow: Test attacking directly, and then blocking.
+    Iteratively add keywords and abilities. For each new keyword or ability, update GameRules, and potentially GameEngine or Action types.
+
+This is a significant amount of code, but by breaking it down into these logical units, you can build and test piece by piece. Good luck!

@@ -1,0 +1,113 @@
+Project Development Order: Iterative & Test-Driven
+
+Phase 1: Core Game Data & Basic Models (Foundation)
+
+    Project Setup & Basic Folder Structure:
+        Create the mindbug_ai/ root directory.
+        Add data/, src/, tests/ directories.
+        Create empty __init__.py files in subdirectories of src to make them Python packages.
+
+        Create README.md and requirements.txt.
+        Self-Test: Can you run a simple Python script from the root?
+
+    Card Data Definition (data/cards.json):
+        Start by defining a small subset of cards (e.g., 5-10 creatures with varying power, keywords, and simple abilities, plus the Mindbug card itself). Don't try to define all 48 cards initially. This allows you to test the parsing and logic early.
+        Self-Test: Open cards.json in a text editor and verify JSON syntax.
+
+    Basic Card Model (src/models/card.py):
+        Create the Card class to hold the parsed data from cards.json.
+        Implement __repr__ for easy printing.
+        Self-Test: Write a small script to load cards.json using json module and instantiate Card objects. Print them to verify data loading.
+
+    Data Loader Utility (src/utils/data_loader.py):
+        Create a function load_cards_from_json() that reads cards.json and returns a dictionary of Card objects (e.g., {'card_id': Card_object}).
+        Unit Test (First Real Test!): Write test_cards.py to assert that load_cards_from_json loads the correct number of cards and that specific card attributes (name, power) are correct.
+
+Phase 2: Game State & Player Management (Static Game Representation)
+
+    Player Model (src/models/player.py):
+        Define the Player class: Hand (list of Cards), Deck (list of Cards), Discard Pile (list of Cards), Play Area (list of Creatures/Cards), Life Points, Mindbugs remaining.
+        Implement basic methods: draw_card(), discard_card(), add_to_hand(), lose_life(), gain_life(), use_mindbug().
+        Self-Test: Instantiate Player objects, add cards to their hand/deck, and call some methods to ensure state changes correctly.
+
+    Creature Model (src/models/creature.py):
+        Define the Creature class: Inherit from Card or compose it. Add attributes for its current game state (e.g., exhausted, taken_damage, controller). This distinguishes a card in hand from a creature on the battlefield.
+        Self-Test: Instantiate a Card, then instantiate a Creature from that Card and set its attributes.
+
+    Game State Model (src/models/game_state.py):
+        Define the GameState class: Current active player, inactive player, Player objects for both, current phase of turn, creature zones for both players, etc. This object is the single source of truth for the game.
+        Implement initial_state() class method to set up a new game (deal starting hands/decks).
+        Self-Test: Create an initial GameState and print out its contents to verify everything is where it should be.
+
+Phase 3: Core Game Logic (The Engine)
+
+    Basic Game Rules (src/core/game_rules.py):
+        Implement the most fundamental game rules:
+            Ability mapping: How card ability_type and id map to specific Python functions.
+            Basic combat resolution (power comparison, defeated creatures go to discard).
+            Keyword effects (e.g., Tough: doesn't get defeated by damage, but is defeated by opponent's power).
+        Start simple! Focus on "Play Creature" and "Attack" mechanics first.
+
+    Game Engine (Part 1 - src/core/game_engine.py):
+        Start with the game loop structure: while not game_state.is_game_over(): ...
+        Implement apply_action(game_state, action) method. For now, just handle very basic actions like "Play Creature from Hand".
+        Implement turn phases (at least: Play Phase, Attack Phase).
+        Integrate with GameRules for basic ability activation (e.g., "Play" abilities).
+        Unit Test: Write test_game_engine.py. Test playing a creature, ensure it moves from hand to play area, and creature health/exhaustion updates correctly.
+
+    Action Definition (Implicit or Explicit):
+        Decide how players/AIs will communicate their moves. For now, simple tuples or enums are fine (e.g., ("PLAY_CREATURE", card_id), ("ATTACK", attacker_id, target_id)). Later, you'll formalize this into an Action class.
+
+Phase 4: Player Interaction & Full Game Flow
+
+    Human Agent (src/agents/human_agent.py):
+        Implement choose_action(game_state) that prompts the human player for input (e.g., "Enter 'play [card_id]'").
+        Include input validation (is the chosen card in hand? Is it a valid action for the current phase?).
+        Integration Test (Manual Play): Create src/cli.py to instantiate GameEngine and two HumanAgents. Play a few turns manually. This is your first full end-to-end game!
+
+    Flesh out Game Engine & Rules:
+        Implement the remaining phases of a turn.
+        Add Mindbug mechanics: How to use a Mindbug, how it changes control.
+        Implement all core combat rules (Mindbug combat, keyword interactions, simultaneous defeats).
+        Handle winning/losing conditions (life points, running out of cards in draw pile, etc.).
+        Unit Tests: Continue adding tests for combat, Mindbugs, various card abilities, and win conditions. This is crucial for correctness.
+        Integration Test: Play full games with two human players using cli.py to ensure all rules are followed correctly.
+
+Phase 5: Basic AI & Parallelization
+
+    Random Agent (src/agents/random_agent.py):
+        Implement choose_action(game_state) to select a valid action randomly from all possible actions at a given state.
+        This requires GameEngine or GameState to have a method like get_valid_actions(game_state).
+        Unit Test: Test RandomAgent's choose_action to ensure it always returns a valid action.
+
+    Action Class (src/models/action.py - if not already done):
+        Formalize actions into a class structure (e.g., PlayCreatureAction(card_id), AttackAction(attacker_id, target_id), EndTurnAction()). This makes actions more robust and easier for AI to work with.
+
+    Parallel Game Runner (src/main.py & run_single_game function):
+        Implement the run_single_game function.
+        Implement the multiprocessing pool logic in main.py as discussed previously.
+        Integration Test: Run 100-1000 games between two RandomAgents in parallel. Verify that the script completes and reports basic statistics (e.g., number of wins for each agent). This confirms your engine is robust enough for automated play.
+
+Phase 6: AI Development (Ongoing)
+
+    Base AI Agent (src/agents/base_agent.py):
+        Create an abstract base class that defines the common interface for all AI agents (e.g., def choose_action(self, game_state: GameState) -> Action:).
+
+    Simple Heuristic Agent (Optional but Recommended):
+        Before jumping into complex ML, try a simple AI that uses basic rules (e.g., always play the highest power creature, always attack if possible, prioritize attacking player life). This gives you a baseline for comparison.
+
+    AI Algorithm Implementation:
+        Monte Carlo Tree Search (MCTS): A strong candidate for turn-based games. Start by implementing a basic MCTS.
+        Reinforcement Learning (RL): If you're going for RL, you'll need to define states, actions, and rewards. This is a much larger undertaking.
+
+    Training & Evaluation:
+        Develop scripts in main.py (or a separate train.py) to run massive numbers of simulations, collect data, and train your AI.
+        Implement evaluation metrics (win rate against random, win rate against heuristic, etc.).
+
+Key Principles Throughout:
+
+    Test-Driven Development (TDD): For every major piece of logic, write tests before or concurrently with the code. This ensures correctness and makes refactoring safer.
+    Modularity: Keep classes and functions focused on a single responsibility.
+    Immutability (where possible): When modifying game state, often it's better to return a new GameState object than to modify the existing one in place. This greatly simplifies parallelization and debugging.
+    Start Simple: Don't try to implement every card ability or rule at once. Get the core loop working, then add complexity iteratively.
+    Version Control (Git): Use Git from day one. Commit frequently with meaningful messages. This is your safety net.
