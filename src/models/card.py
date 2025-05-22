@@ -1,9 +1,11 @@
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Any, Optional
+from src.models.player import Player
 
 class Card:
-    def __init__(self, card_id: Optional[str] = None, name: Optional[str] = None, 
-                 power: Optional[int] = None, keywords: Optional[List[str]] = None,
-                 ability_type: Optional[str] = None, ability_text: Optional[str] = None) -> None:
+    def __init__(self, card_id: str, name: str, 
+                 power: int, keywords: List[str],
+                 ability_type: str, ability_text: str,
+                 is_exhausted: bool = False, controller: Optional[Player] = None) -> None:
         """
         Initialize a Card object with data from cards.json
         
@@ -15,12 +17,14 @@ class Card:
             ability_type: Type of ability (e.g., attack, passive)
             ability_text: Text description of the card
         """
-        self.id: Optional[str] = card_id
-        self.name: Optional[str] = name
-        self.power: Optional[int] = power
+        self.id: str = card_id
+        self.name: str = name
+        self.power: int = power
         self.keywords: List[str] = keywords or []
-        self.ability_type: Optional[str] = ability_type
-        self.ability_text: Optional[str] = ability_text
+        self.ability_type: str = ability_type
+        self.ability_text: str = ability_text
+        self.is_exhausted: bool = is_exhausted
+        self.controller: Optional[Player] = controller
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Card':
@@ -34,12 +38,12 @@ class Card:
             Card: A new Card instance
         """
         return cls(
-            card_id = data.get('id'),
-            name = data.get('name'),
-            power = data.get('power'),
+            card_id = data.get('id', ''),
+            name = data.get('name', ''),
+            power = data.get('power', -1),
             keywords = data.get('keywords', []),
-            ability_type = data.get('ability_type'),
-            ability_text = data.get('ability_text')
+            ability_type = data.get('ability_type', ''),
+            ability_text = data.get('ability_text', '')
         )
     
     def __repr__(self) -> str:

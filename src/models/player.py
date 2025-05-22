@@ -15,9 +15,17 @@ class Player:
         """
         self.id: str = id
         self.hand: List[Card] = hand
+        for card in hand:
+            card.controller = self
         self.deck: List[Card] = deck
+        for card in deck:
+            card.controller = self
         self.discard_pile: List[Card] = discard_pile
+        for card in discard_pile:
+            card.controller = self
         self.play_area: List[Card] = play_area
+        for card in play_area:
+            card.controller = self
         self.life_points: int = life_points
         self.mindbugs: int = mindbugs
     
