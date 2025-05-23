@@ -8,13 +8,13 @@ class Action:
     def __repr__(self):
         return f"Action(Player: {self.player_id})"
 
-class PlayCreatureAction(Action):
+class PlayCardAction(Action):
     def __init__(self, player_id: str, card_id: str):
         super().__init__(player_id)
         self.card_id = card_id
 
     def __repr__(self):
-        return f"PlayCreatureAction(Player: {self.player_id}, Card: {self.card_id})"
+        return f"PlayCardAction(Player: {self.player_id}, Card: {self.card_id})"
 
 class AttackAction(Action):
     def __init__(self, player_id: str, attacking_creature_id: str, target_id: str):
@@ -51,12 +51,5 @@ class PassMindbugAction(Action):
 
     def __repr__(self):
         return f"PassMindbugAction(Player: {self.player_id})"
-
-class EndTurnAction(Action):
-    def __init__(self, player_id: str):
-        super().__init__(player_id)
-
-    def __repr__(self):
-        return f"EndTurnAction(Player: {self.player_id})"
 
 # Define other potential actions as needed (e.g., ActivateAbilityAction)

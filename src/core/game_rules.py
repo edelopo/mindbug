@@ -5,8 +5,10 @@ from src.models.card import Card
 from src.models.action import Action # Will use this to validate actions later
 
 class GameRules:
-    def __init__(self, card_definitions: Dict[str, Card]):
+    def __init__(self, card_definitions: Dict[str, Card], deck_size: int = 10, hand_size: int = 5):
         self.card_definitions = card_definitions
+        self.deck_size = deck_size
+        self.hand_size = hand_size
         # Map card IDs to specific ability functions for "Play" effects
         # You'll expand this significantly as you add more cards
         self.play_ability_handlers = {
@@ -43,6 +45,8 @@ class GameRules:
             raise ValueError("Attacker has no controller. Cannot resolve combat.")
         if blocker.controller == None:
             raise ValueError("Blocker has no controller. Cannot resolve combat.")
+        if attacker.controller.id != game_state.active_player_id:
+            raise ValueError("Invalid attack: Attacker is not controlled by the active player.")
 
         print(f"Resolving combat: {attacker.name} (P:{attacker.power}) vs {blocker.name} (P:{blocker.power})")
 

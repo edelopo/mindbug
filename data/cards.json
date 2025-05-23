@@ -3,7 +3,7 @@
     "id": "axolotl_healer",
     "name": "Axolotl Healer",
     "amount": 2,
-    "power": 4,
+    "base_power": 4,
     "keywords": ["Poisonous"],
     "ability_type": "play",
     "ability_text": "Play: Gain 2 life points."
@@ -12,7 +12,7 @@
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,
-    "power": 5,
+    "base_power": 5,
     "keywords": [],
     "ability_type": "defeated",
     "ability_text": "Defeated: Take control of up to two creatures with power 5 or less."
@@ -21,7 +21,7 @@
     "id": "kangasaurus_rex",
     "name": "Kangasaurus Rex",
     "amount": 2,
-    "power": 7,
+    "base_power": 7,
     "keywords": [],
     "ability_type": "play",
     "ability_text": "Play: Defeat all enemy creatures with power 4 or less."
@@ -30,7 +30,7 @@
     "id": "shield_bugs",
     "name": "Shield Bugs",
     "amount": 2,
-    "power": 4,
+    "base_power": 4,
     "keywords": ["Tough"],
     "ability_type": "passive",
     "ability_text": "Other allied creatures have +1 power."
@@ -39,7 +39,7 @@
     "id": "tusked_extorter",
     "name": "Tusked Extorter",
     "amount": 2,
-    "power": 8,
+    "base_power": 8,
     "keywords": [],
     "ability_type": "attack",
     "ability_text": "Attack: The opponent discards a card."

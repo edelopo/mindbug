@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Optional
 from src.models.card import Card
 
 class Player:
-    def __init__(self, id: str, deck: List[Card] = [], hand: List[Card] = [], 
-                 discard_pile: List[Card] = [], play_area: List[Card] = [],
+    def __init__(self, id: str, deck: Optional[List[Card]] = None, hand: Optional[List[Card]] = None, 
+                 discard_pile: Optional[List[Card]] = None, play_area: Optional[List[Card]] = None,
                  life_points: int = 3, mindbugs: int = 2) -> None:
         """
         Initialize a new player.
@@ -14,22 +14,22 @@ class Player:
             starting_mindbugs: Initial number of mindbugs
         """
         self.id: str = id
-        self.hand: List[Card] = hand
-        for card in hand:
+        self.deck: List[Card] = deck if deck is not None else []
+        for card in self.deck:
             card.controller = self
-        self.deck: List[Card] = deck
-        for card in deck:
+        self.hand: List[Card] = hand if hand is not None else []
+        for card in self.hand:
             card.controller = self
-        self.discard_pile: List[Card] = discard_pile
-        for card in discard_pile:
+        self.discard_pile: List[Card] = discard_pile if discard_pile is not None else []
+        for card in self.discard_pile:
             card.controller = self
-        self.play_area: List[Card] = play_area
-        for card in play_area:
+        self.play_area: List[Card] = play_area if play_area is not None else []
+        for card in self.play_area:
             card.controller = self
         self.life_points: int = life_points
         self.mindbugs: int = mindbugs
     
-    def draw_card(self, count: int = 1) -> List[Card]:
+    def draw_card(self) -> Card:
         """
         Draw cards from the top of the deck.
         
@@ -39,13 +39,12 @@ class Player:
         Returns:
             List: Cards that were drawn
         """
-        drawn_cards: List[Card] = []
-        for _ in range(min(count, len(self.deck))):
-            if self.deck:
-                card = self.deck.pop(0)  # Take from the top of the deck
-                self.hand.append(card)
-                drawn_cards.append(card)
-        return drawn_cards
+        if self.deck:
+            card = self.deck.pop(0)  # Take from the top of the deck
+            self.hand.append(card)
+        else:
+            raise ValueError("No cards left in the deck to draw.")
+        return card
     
     def discard_card(self, card: Card) -> bool:
         """

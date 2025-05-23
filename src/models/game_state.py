@@ -11,6 +11,7 @@ class GameState:
                  players: Dict[str, Player],
                  turn_count: int,
                  phase: str,
+                 _pending_mindbug_card: Optional[Card] = None,
                  game_over: bool = False,
                  winner_id: Optional[str] = None):
         """
@@ -21,7 +22,7 @@ class GameState:
             inactive_player_id: The ID of the other player.
             players: A dictionary mapping player IDs to Player objects.
             turn_count: The current turn number.
-            phase: The current phase of the turn (e.g., "draw", "play", "resolve", "end").
+            phase: The current phase of the turn (e.g., "draw_phase", "play_phase", etc.).
             game_over: Boolean indicating if the game has ended.
             winner_id: The ID of the winning player, if game_over is True.
         """
@@ -30,6 +31,7 @@ class GameState:
         self.players = players
         self.turn_count = turn_count
         self.phase = phase
+        self._pending_mindbug_card = _pending_mindbug_card # Used for Mindbug actions
         self.game_over = game_over
         self.winner_id = winner_id
 
@@ -38,8 +40,8 @@ class GameState:
                       player1_id: str,
                       player2_id: str,
                       starting_deck: List[Card], # All starting cards from data/cards.json
-                      num_creatures_per_deck: int = 10, # Standard Mindbug deck size
-                      initial_hand_size: int = 5): # Standard Mindbug hand size
+                      deck_size: int = 10, # Standard deck size
+                      hand_size: int = 5): # Standard hand size
         """
         Sets up the initial state for a new Mindbug game.
 
@@ -47,8 +49,8 @@ class GameState:
             player1_id: The ID for the first player.
             player2_id: The ID for the second player.
             starting_deck: A list of all Cards, loaded from cards.json (e.g., via data_loader).
-            num_creatures_per_deck: The number of creature cards each player starts with in their deck.
-            initial_hand_size: The number of cards each player draws at the start.
+            deck_size: The number of creature cards each player starts with in their deck.
+            hand_size: The number of cards each player draws at the start.
 
         Returns:
             A new GameState object representing the beginning of the game.
@@ -58,11 +60,11 @@ class GameState:
         random.shuffle(starting_deck)
 
         # Distribute creature cards to decks
-        if len(starting_deck) < num_creatures_per_deck * 2:
-            raise ValueError(f"Not enough creature cards to form decks. Need at least {num_creatures_per_deck * 2}, but found {len(starting_deck)}.")
+        if len(starting_deck) < deck_size * 2:
+            raise ValueError(f"Not enough creature cards to form decks. Need at least {deck_size * 2}, but found {len(starting_deck)}.")
 
-        player1_deck_list = starting_deck[0:num_creatures_per_deck]
-        player2_deck_list = starting_deck[num_creatures_per_deck:num_creatures_per_deck * 2]
+        player1_deck_list = starting_deck[0:deck_size]
+        player2_deck_list = starting_deck[deck_size:deck_size * 2]
 
         # Create Player objects
         player1 = Player(
@@ -77,8 +79,9 @@ class GameState:
         players = {player1_id: player1, player2_id: player2}
 
         # Initial draw for both players
-        player1.draw_card(initial_hand_size)
-        player2.draw_card(initial_hand_size)
+        for _ in range(hand_size):
+            player1.draw_card()
+            player2.draw_card()
 
         # Determine starting player (e.g., random or always P1)
         # For simplicity, let's say Player 1 starts
@@ -90,7 +93,8 @@ class GameState:
             inactive_player_id=inactive_player_id,
             players=players,
             turn_count=1, # Game starts at turn 1
-            phase="play",
+            phase="play_phase",
+            _pending_mindbug_card=None,
             game_over=False,
             winner_id=None
         )
@@ -145,6 +149,7 @@ class GameState:
             players=players_copy,
             turn_count=self.turn_count,
             phase=self.phase,
+            _pending_mindbug_card=self._pending_mindbug_card.copy() if self._pending_mindbug_card else None,
             game_over=self.game_over,
             winner_id=self.winner_id
         )

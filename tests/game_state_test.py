@@ -26,19 +26,27 @@ def run_game_state_test():
         # Create a game state with the players
         print("\n--- Creating GameState ---")
         game = GameState.initial_state(player1_id="player1", player2_id="player2", starting_deck=cards,
-                                       num_creatures_per_deck=4, initial_hand_size=2)
+                                       deck_size=4, hand_size=2)
         print(f"Game created with {len(game.players)} players")
         
         # Test initial game state
         print("\n--- Testing Initial GameState ---")
+        active_player = game.get_active_player()
+        inactive_player = game.get_inactive_player()
         print(
             f"Current turn: {game.turn_count}\n"
-            f"Active player: {game.active_player_id}\n"
-            f"  Hand: {game.get_active_player().hand}\n"
-            f"  Play area: {game.get_active_player().play_area}\n"
-            f"Inactive player: {game.inactive_player_id}\n"
-            f"  Hand: {game.get_inactive_player().hand}\n"
-            f"  Play area: {game.get_inactive_player().play_area}"
+            f"Active player: {active_player.id}\n"
+            f"  Hand size: {len(active_player.hand)}\n"
+            f"  Hand: {[card.name for card in active_player.hand]}\n"
+            f"  Deck size: {len(active_player.deck)}\n"
+            f"  Deck: {[card.name for card in active_player.deck]}\n"
+            f"  Play area: {active_player.play_area}\n"
+            f"Inactive player: {inactive_player.id}\n"
+            f"  Hand size: {len(inactive_player.hand)}\n"
+            f"  Hand: {[card.name for card in inactive_player.hand]}\n"
+            f"  Deck size: {len(inactive_player.deck)}\n"
+            f"  Deck: {[card.name for card in inactive_player.deck]}\n"
+            f"  Play area: {inactive_player.play_area}\n"
         )
         
         # # Test turn management
@@ -53,13 +61,15 @@ def run_game_state_test():
         
         # # Test playing a card
         # print("\n--- Testing Play Card ---")
-        # if game.current_player.hand:
-        #     card_to_play = game.current_player.hand[0]
+        # active_player = game.get_active_player()
+        # if active_player.hand:
+        #     card_to_play = active_player.hand[0]
         #     print(f"Playing card: {card_to_play}")
-        #     hand_size_before = len(game.current_player.hand)
-        #     game.play_card(game.current_player, card_to_play)
-        #     print(f"Hand size after playing: {len(game.current_player.hand)}")
-        #     assert len(game.current_player.hand) == hand_size_before - 1, "Hand size should decrease after playing a card"
+        #     hand_size_before = len(active_player.hand)
+        #     active_player.play_card(card_to_play)
+        #     print(f"Hand after playing: {active_player.hand}")
+        #     print(f"Play area after playing: {active_player.play_area}")
+        #     assert len(active_player.hand) == hand_size_before - 1, "Hand size should decrease after playing a card"
             
         # # Test attacking
         # print("\n--- Testing Attack ---")

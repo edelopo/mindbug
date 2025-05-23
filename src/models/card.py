@@ -1,11 +1,12 @@
-from typing import List, Dict, Any, Optional
-from src.models.player import Player
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.models.player import Player
 
 class Card:
     def __init__(self, card_id: str, name: str, 
                  power: int, keywords: List[str],
                  ability_type: str, ability_text: str,
-                 is_exhausted: bool = False, controller: Optional[Player] = None) -> None:
+                 is_exhausted: bool = False, controller: Optional['Player'] = None) -> None:
         """
         Initialize a Card object with data from cards.json
         
@@ -40,7 +41,7 @@ class Card:
         return cls(
             card_id = data.get('id', ''),
             name = data.get('name', ''),
-            power = data.get('power', -1),
+            power = data.get('base_power', -1),
             keywords = data.get('keywords', []),
             ability_type = data.get('ability_type', ''),
             ability_text = data.get('ability_text', '')
@@ -54,3 +55,29 @@ class Card:
             str: A formatted string with card information
         """
         return f"Card(ID: {self.id}, Name: '{self.name}', Power: {self.power}, Keywords: {self.keywords}, Abilities: {self.ability_text})"
+    
+    def __str__(self) -> str:
+        """
+        String representation of the Card for easy printing
+        
+        Returns:
+            str: A formatted string with card information
+        """
+        return f"{self.name}"
+    
+    def copy(self) -> 'Card':
+        """
+        Create a deep copy of the card.
+        Returns:
+            Card: A new Card object with the same attributes
+        """
+        return Card(
+            card_id=self.id,
+            name=self.name,
+            power=self.power,
+            keywords=self.keywords.copy(),
+            ability_type=self.ability_type,
+            ability_text=self.ability_text,
+            is_exhausted=self.is_exhausted,
+            controller=self.controller
+        )
