@@ -1,5 +1,6 @@
 import random
 import copy
+from uuid import UUID
 from typing import Dict, List, Optional, Tuple
 from src.models.game_state import GameState
 from src.models.card import Card
@@ -34,22 +35,35 @@ class GameRules:
             "Hunter": self._handle_hunter_keyword,
         }
 
+
     # --- Core Game Logic Functions ---
 
-    def resolve_combat(self, game_state: GameState, attacker: Card, blocker: Card) -> Tuple[GameState, Optional[List[Card]]]:
+    def resolve_combat(self, game_state: GameState, attacker_uuid: UUID, 
+                       blocker_uuid: UUID) -> Tuple[GameState, List[UUID]]:
         """
         Resolves a combat between two cards.
-        Returns the updated GameState and the ID of the defeated card(s) or None if none.
-        Note: This simplifies for now. Mindbug has simultaneous defeats.
+        Returns the updated GameState and a list of defeated card UUIDs.
         """
-        if attacker.controller == None:
-            raise ValueError("Attacker has no controller. Cannot resolve combat.")
-        if blocker.controller == None:
-            raise ValueError("Blocker has no controller. Cannot resolve combat.")
-        if attacker.controller.id != game_state.active_player_id:
-            raise ValueError("Invalid attack: Attacker is not controlled by the active player.")
+        attacker = None
+        for card in game_state.get_inactive_player().play_area: # The attacking player is the inactive player
+            if card.uuid == attacker_uuid:
+                attacker = card
+                break
+        else:
+            raise ValueError(f"Attacker card with UUID {attacker_uuid} not found in play area.")
+        
+        blocker = None
+        for card in game_state.get_active_player().play_area: # The defending player is the active player
+            if card.uuid == blocker_uuid:
+                blocker = card
+                break
+        else:
+            raise ValueError(f"Blocker card with UUID {blocker_uuid} not found in play area.")
+        
+        if attacker.controller is None or blocker.controller is None:
+            raise ValueError("Attacker or blocker has no controller. Cannot resolve combat.")
 
-        print(f"Resolving combat: {attacker.name} (P:{attacker.power}) vs {blocker.name} (P:{blocker.power})")
+        print(f"Resolving combat: {attacker.name} (P={attacker.power}) vs {blocker.name} (P={blocker.power})")
 
         defeated_attacker = False
         defeated_blocker = False
@@ -63,7 +77,7 @@ class GameRules:
             print(f"{blocker.name} is Poisonous. {attacker.name} is defeated.")
             defeated_attacker = True
 
-        # Normal power comparison if not already defeated by Poisonous
+        # Effective power comparison if not already defeated by Poisonous
         if not defeated_attacker or not defeated_blocker:
             if attacker.power > blocker.power:
                 defeated_blocker = True
@@ -75,11 +89,6 @@ class GameRules:
                 defeated_attacker = True
                 defeated_blocker = True
                 print(f"{attacker.name} and {blocker.name} defeat each other.")
-
-        # Apply "Tough" keyword effect
-        # Tough: If this card would be defeated, and is not yet exhausted (sideways), exhaust it by turning it sideways.
-        # It otherwise works completely normally. If it gets defeated while exhausted, it is discarded.
-        # This means 'Tough' effectively gives a card a second life by becoming exhausted instead of discarded.
 
         # Apply Tough for attacker
         if defeated_attacker and "Tough" in attacker.keywords:
@@ -110,12 +119,12 @@ class GameRules:
             blocker.controller.discard_pile.append(blocker)
             blocker.controller.play_area.remove(blocker)
         
-        defeated_cards = []
+        defeated_cards_uuid = []
         if defeated_attacker:
-            defeated_cards.append(attacker)
+            defeated_cards_uuid.append(attacker.uuid)
         if defeated_blocker:
-            defeated_cards.append(blocker)
-        return game_state, defeated_cards
+            defeated_cards_uuid.append(blocker.uuid)
+        return game_state, defeated_cards_uuid
 
 
     def lose_life(self, game_state: GameState, player_id: str, amount: int = 1) -> GameState:
@@ -135,56 +144,74 @@ class GameRules:
 
         return game_state
 
+
     # --- Ability Handlers (called by GameEngine when appropriate) ---
 
-    def activate_play_ability(self, game_state: GameState, card_played: Card, player_who_played_id: str) -> GameState:
+    def activate_play_ability(self, game_state: GameState, card_played_uuid: UUID) -> GameState:
         """Activates a card's 'Play' ability."""
+        card_played = self.get_card_by_uuid(game_state, card_played_uuid)
+        if card_played.controller is None:
+            raise ValueError(f"Card with UUID {card_played_uuid} has no controller. Cannot activate play ability.")
         if card_played.ability_type == "play":
-            print(f"Activating Play ability of {card_played.name} for {player_who_played_id}")
+            print(f"Activating Play ability of {card_played.name} for {card_played.controller.id}")
             handler = self.play_ability_handlers.get(card_played.id)
             if handler:
-                # Pass only necessary information; might need to pass card_played object if ability modifies it
-                game_state = handler(copy.deepcopy(game_state), card_played, player_who_played_id) # Pass a copy to avoid side effects if modifying state in handler
+                game_state = handler(copy.deepcopy(game_state), card_played_uuid)
         return game_state
 
-    def activate_attack_ability(self, game_state: GameState, attacking_card: Card) -> GameState:
+    def activate_attack_ability(self, game_state: GameState, attacking_card_uuid: UUID) -> GameState:
         """Activates a card's 'Attack' ability."""
+        attacking_card = self.get_card_by_uuid(game_state, attacking_card_uuid)
+        if attacking_card.controller is None:
+            raise ValueError(f"Attacking card with UUID {attacking_card_uuid} has no controller. Cannot activate attack ability.")
         if attacking_card.ability_type == "attack":
             print(f"Activating Attack ability for {attacking_card.name}")
             handler = self.attack_ability_handlers.get(attacking_card.id)
             if handler:
-                game_state = handler(copy.deepcopy(game_state), attacking_card)
+                game_state = handler(copy.deepcopy(game_state), attacking_card_uuid)
         return game_state
 
-    def activate_defeated_ability(self, game_state: GameState, defeated_card: Card) -> GameState:
+    def activate_defeated_ability(self, game_state: GameState, defeated_card_uuid: UUID) -> GameState:
         """Activates a card's 'Defeated' ability."""
+        defeated_card = self.get_card_by_uuid(game_state, defeated_card_uuid)
+        if defeated_card.controller is None:
+            raise ValueError(f"Defeated card with UUID {defeated_card_uuid} has no controller. Cannot activate defeated ability.")
         if defeated_card.ability_type == "defeated":
             print(f"Activating Defeated ability for {defeated_card.name}")
             handler = self.defeated_ability_handlers.get(defeated_card.id)
             if handler:
-                game_state = handler(copy.deepcopy(game_state), defeated_card)
+                game_state = handler(copy.deepcopy(game_state), defeated_card_uuid)
         return game_state
+
 
     # --- Specific Card Ability Implementations ---
     # These functions take a GameState (or relevant parts) and apply the effect,
     # returning a new GameState.
 
-    def _axolotl_healer_play_ability(self, game_state: GameState, card: Card, player_id: str) -> GameState:
+    # -- Play Abilities --
+
+    def _axolotl_healer_play_ability(self, game_state: GameState, card_uuid: UUID) -> GameState:
         """Axolotl Healer's 'Play' effect: Gain 2 life points."""
-        player = game_state.get_player(player_id)
+        card_played = self.get_card_by_uuid(game_state, card_uuid)
+        player = card_played.controller
+        if player is None:
+            raise ValueError("Card played has no controller. Cannot resolve play ability.")
 
         # Player gains 2 life
         player.life_points += 2
-        print(f"{player_id} gains 2 life points. New life: {player.life_points}")
+        print(f"{player.id} gains 2 life points. New life: {player.life_points}")
 
         return game_state
+    
+    # -- Attack Abilities --
 
-    def _tusked_extorter_attack_ability(self, game_state: GameState, attacking_card: Card) -> GameState:
+    def _tusked_extorter_attack_ability(self, game_state: GameState, attacking_card_uuid: UUID) -> GameState:
         """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
+        attacking_card = self.get_card_by_uuid(game_state, attacking_card_uuid)
         if attacking_card.controller is None:
             raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
         
-        opponent = game_state.get_inactive_player() if attacking_card.controller.id == game_state.active_player_id else game_state.get_active_player()
+        opponent = game_state.get_opponent_of(attacking_card.controller.id)
         
         if opponent.hand:
             # AI/Player decision: which card to discard? For now, random.
@@ -195,6 +222,11 @@ class GameRules:
             print(f"{opponent.id}'s hand is empty, cannot discard.")
 
         return game_state
+    
+    # -- Defeated Abilities --
+
+    # -- Passive Abilities --
+
 
     # --- Keyword Handlers (e.g., during combat or blocking) ---
 
@@ -225,11 +257,21 @@ class GameRules:
     # --- Utility methods for rules ---
     # These might be used by GameEngine to determine valid actions or apply effects.
 
-    def is_card_valid_blocker(self, blocking_card: Card, attacking_card: Card,
-                              blocker_play_area: List[Card], attacker_play_area: List[Card]) -> bool:
+    def is_valid_blocker(self, blocking_card: Card, attacking_card: Card,
+                              blocking_player_play_area: List[Card], 
+                              attacking_player_play_area: List[Card]) -> bool:
         """Checks if a blocker is valid."""
 
         if "Sneaky" in attacking_card.keywords and "Sneaky" not in blocking_card.keywords:
             return False # Sneaky can only be blocked by Sneaky
         # Add other blocking rules if they exist (e.g., cards that cannot block)
         return True
+    
+    def get_card_by_uuid(self, game_state: GameState, card_uuid: UUID) -> Card:
+        """Returns a card by its UUID from the game state."""
+        for player in [game_state.get_active_player(), game_state.get_inactive_player()]:
+            for card in player.play_area + player.hand + player.discard_pile:
+                if card.uuid == card_uuid:
+                    return card
+        else:
+            raise ValueError(f"Card with UUID {card_uuid} not found in game state.")

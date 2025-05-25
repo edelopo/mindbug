@@ -1,6 +1,5 @@
-from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING:
-    from src.models.player import Card
+from typing import Optional
+from uuid import UUID
 
 class Action:
     """Base class for all actions a player can take."""
@@ -11,32 +10,30 @@ class Action:
         return f"Action(Player: {self.player_id})"
 
 class PlayCardAction(Action):
-    def __init__(self, player_id: str, card: 'Card'):
+    def __init__(self, player_id: str, card_uuid: UUID):
         super().__init__(player_id)
-        self.card = card
+        self.card_uuid = card_uuid
 
     def __repr__(self):
-        return f"PlayCardAction(Player: {self.player_id}, Card: {self.card.id})"
+        return f"PlayCardAction(Player: {self.player_id}, Card UUID: {self.card_uuid})"
 
 class AttackAction(Action):
-    def __init__(self, player_id: str, attacking_card: 'Card'):
+    def __init__(self, player_id: str, attacking_card_uuid: UUID):
         super().__init__(player_id)
-        self.attacking_card = attacking_card
+        self.attacking_card_uuid = attacking_card_uuid
 
     def __repr__(self):
         return (f"AttackAction(Player: {self.player_id}, "
-                f"Attacker: {self.attacking_card})")
+                f"Attacker UUID: {self.attacking_card_uuid})")
 
 class BlockAction(Action):
-    def __init__(self, player_id: str, attacking_card_id: str, blocking_card_id: Optional[str] = None):
+    def __init__(self, player_id: str, blocking_card_uuid: Optional[UUID] = None):
         super().__init__(player_id)
-        self.attacking_card_id = attacking_card_id # The card being blocked
-        self.blocking_card_id = blocking_card_id # The card blocking, None if no block
+        self.blocking_card_uuid = blocking_card_uuid # The card blocking, None if no block
 
     def __repr__(self):
         return (f"BlockAction(Player: {self.player_id}, "
-                f"Attacker (to be blocked): {self.attacking_card_id}, "
-                f"Blocker: {self.blocking_card_id if self.blocking_card_id else 'No Block'})")
+                f"Blocker: {self.blocking_card_uuid if self.blocking_card_uuid else 'No Block'})")
 
 class UseMindbugAction(Action):
     def __init__(self, player_id: str):

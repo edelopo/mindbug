@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
-import uuid
+from uuid import UUID, uuid4
 import copy
 if TYPE_CHECKING:
     from src.models.player import Player
@@ -20,7 +20,7 @@ class Card:
             ability_type: Type of ability (e.g., attack, passive)
             ability_text: Text description of the card
         """
-        self.uuid: uuid.UUID = uuid.uuid4()  # Generate a unique ID for the card
+        self.uuid: UUID = uuid4()  # Generate a unique ID for the card
         self.id: str = id
         self.name: str = name
         self.power: int = power

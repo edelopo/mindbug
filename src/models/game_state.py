@@ -1,7 +1,7 @@
 # src/models/game_state.py
 import random
 import copy
-import uuid
+from uuid import UUID
 from typing import Dict, List, Optional, TYPE_CHECKING # For type hints
 from src.models.player import Player
 from src.models.card import Card
@@ -34,8 +34,8 @@ class GameState:
         self.phase = phase
         self.game_over = game_over
         self.winner_id = winner_id
-        self._pending_mindbug_card_uuid: Optional[uuid.UUID] = None
-        self._pending_attack_card_uuid: Optional[uuid.UUID] = None
+        self._pending_mindbug_card_uuid: Optional[UUID] = None
+        self._pending_attack_card_uuid: Optional[UUID] = None
 
     @classmethod
     def initial_state(cls,
@@ -113,6 +113,23 @@ class GameState:
     def get_inactive_player(self) -> Player:
         """Helper to get the currently inactive Player object."""
         return self.get_player(self.inactive_player_id)
+    
+    def get_opponent_of(self, player_id: str) -> Player:
+        """
+        Returns the opponent Player object for a given player ID.
+        
+        Args:
+            player_id: The ID of the player whose opponent is requested.
+        
+        Returns:
+            The Player object of the opponent.
+        """
+        if player_id == self.active_player_id:
+            return self.get_inactive_player()
+        elif player_id == self.inactive_player_id:
+            return self.get_active_player()
+        else:
+            raise ValueError(f"Player with ID '{player_id}' is not part of this game.")
 
     def switch_active_player(self):
         """Switches the active and inactive players."""

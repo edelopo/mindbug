@@ -65,7 +65,7 @@ def run_game_engine_test():
         opponent = game_state.get_inactive_player()
         if player.hand:
             card_to_play = player.hand[0]
-            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play))
+            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play.uuid))
             # Now that the game state has been updated, we can no longer use player and opponent: they are outdated
             game_state = game_engine.apply_action(game_state, PassMindbugAction(game_state.get_active_player().id))
         else:
@@ -77,7 +77,7 @@ def run_game_engine_test():
         opponent = game_state.get_inactive_player()
         if player.hand:
             card_to_play = player.hand[0]
-            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play))
+            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play.uuid))
             # Now that the game state has been updated, we need to get the player and opponent again
             game_state = game_engine.apply_action(game_state, UseMindbugAction(game_state.get_active_player().id))
         else:
@@ -94,7 +94,7 @@ def run_game_engine_test():
         if attacker.play_area:
             attacking_card = attacker.play_area[0]
             
-            game_state = game_engine.apply_action(game_state, AttackAction(attacker.id, attacking_card))
+            game_state = game_engine.apply_action(game_state, AttackAction(attacker.id, attacking_card.uuid))
             defender = game_state.get_active_player()  # Get updated defender after attack (active player has changed)
             assert defender.life_points < initial_defender_life, "Defender should lose life after attack"
         
