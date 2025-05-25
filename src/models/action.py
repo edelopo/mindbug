@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.models.player import Card
 
 class Action:
     """Base class for all actions a player can take."""
@@ -9,41 +11,40 @@ class Action:
         return f"Action(Player: {self.player_id})"
 
 class PlayCardAction(Action):
-    def __init__(self, player_id: str, card_id: str):
+    def __init__(self, player_id: str, card: 'Card'):
         super().__init__(player_id)
-        self.card_id = card_id
+        self.card = card
 
     def __repr__(self):
-        return f"PlayCardAction(Player: {self.player_id}, Card: {self.card_id})"
+        return f"PlayCardAction(Player: {self.player_id}, Card: {self.card.id})"
 
 class AttackAction(Action):
-    def __init__(self, player_id: str, attacking_creature_id: str, target_id: str):
+    def __init__(self, player_id: str, attacking_card_id: str, target_id: str):
         super().__init__(player_id)
-        self.attacking_creature_id = attacking_creature_id
-        self.target_id = target_id # Can be opponent's creature_id or opponent's player_id
+        self.attacking_card_id = attacking_card_id
+        self.target_id = target_id # Can be opponent's card_id or opponent's player_id
 
     def __repr__(self):
         return (f"AttackAction(Player: {self.player_id}, "
-                f"Attacker: {self.attacking_creature_id}, Target: {self.target_id})")
+                f"Attacker: {self.attacking_card_id}, Target: {self.target_id})")
 
 class BlockAction(Action):
-    def __init__(self, player_id: str, attacking_creature_id: str, blocking_creature_id: Optional[str] = None):
+    def __init__(self, player_id: str, attacking_card_id: str, blocking_card_id: Optional[str] = None):
         super().__init__(player_id)
-        self.attacking_creature_id = attacking_creature_id # The creature being blocked
-        self.blocking_creature_id = blocking_creature_id # The creature blocking, None if no block
+        self.attacking_card_id = attacking_card_id # The card being blocked
+        self.blocking_card_id = blocking_card_id # The card blocking, None if no block
 
     def __repr__(self):
         return (f"BlockAction(Player: {self.player_id}, "
-                f"Attacker (to be blocked): {self.attacking_creature_id}, "
-                f"Blocker: {self.blocking_creature_id if self.blocking_creature_id else 'No Block'})")
+                f"Attacker (to be blocked): {self.attacking_card_id}, "
+                f"Blocker: {self.blocking_card_id if self.blocking_card_id else 'No Block'})")
 
 class UseMindbugAction(Action):
-    def __init__(self, player_id: str, played_card_id: str):
+    def __init__(self, player_id: str):
         super().__init__(player_id)
-        self.played_card_id = played_card_id # The card opponent just played
 
     def __repr__(self):
-        return f"UseMindbugAction(Player: {self.player_id}, Target Card: {self.played_card_id})"
+        return f"UseMindbugAction(Player: {self.player_id})"
 
 class PassMindbugAction(Action):
     def __init__(self, player_id: str):

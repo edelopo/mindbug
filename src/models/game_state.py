@@ -11,7 +11,6 @@ class GameState:
                  players: Dict[str, Player],
                  turn_count: int,
                  phase: str,
-                 _pending_mindbug_card: Optional[Card] = None,
                  game_over: bool = False,
                  winner_id: Optional[str] = None):
         """
@@ -31,7 +30,6 @@ class GameState:
         self.players = players
         self.turn_count = turn_count
         self.phase = phase
-        self._pending_mindbug_card = _pending_mindbug_card # Used for Mindbug actions
         self.game_over = game_over
         self.winner_id = winner_id
 
@@ -94,7 +92,6 @@ class GameState:
             players=players,
             turn_count=1, # Game starts at turn 1
             phase="play_phase",
-            _pending_mindbug_card=None,
             game_over=False,
             winner_id=None
         )
@@ -149,7 +146,6 @@ class GameState:
             players=players_copy,
             turn_count=self.turn_count,
             phase=self.phase,
-            _pending_mindbug_card=self._pending_mindbug_card.copy() if self._pending_mindbug_card else None,
             game_over=self.game_over,
             winner_id=self.winner_id
         )

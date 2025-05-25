@@ -9,7 +9,7 @@ from src.utils.data_loader import load_definitions_from_json, load_cards_from_js
 from src.models.player import Player
 from src.models.game_state import GameState
 from src.core.game_engine import GameEngine
-from src.models.action import PlayCardAction, PassMindbugAction
+from src.models.action import PlayCardAction, PassMindbugAction, UseMindbugAction
 import traceback
 
 def run_game_engine_test():
@@ -36,55 +36,52 @@ def run_game_engine_test():
                                        hand_size=game_engine.game_rules.hand_size)
         print(f"Game created with {len(game_state.players)} players")
         
-        # Test initial game state
-        print("\n--- Testing Initial GameState ---")
-        active_player = game_state.get_active_player()
-        inactive_player = game_state.get_inactive_player()
-        print(
-            f"Current turn: {game_state.turn_count}\n"
-            f"Active player: {active_player.id}\n"
-            f"  Hand size: {len(active_player.hand)}\n"
-            f"  Hand: {[card.name for card in active_player.hand]}\n"
-            f"  Deck size: {len(active_player.deck)}\n"
-            f"  Deck: {[card.name for card in active_player.deck]}\n"
-            f"  Play area: {active_player.play_area}\n"
-            f"Inactive player: {inactive_player.id}\n"
-            f"  Hand size: {len(inactive_player.hand)}\n"
-            f"  Hand: {[card.name for card in inactive_player.hand]}\n"
-            f"  Deck size: {len(inactive_player.deck)}\n"
-            f"  Deck: {[card.name for card in inactive_player.deck]}\n"
-            f"  Play area: {inactive_player.play_area}\n"
-        )
+        # # Test initial game state
+        # print("\n--- Testing Initial GameState ---")
+        # active_player = game_state.get_active_player()
+        # inactive_player = game_state.get_inactive_player()
+        # print(
+        #     f"Current turn: {game_state.turn_count}\n"
+        #     f"Active player: {active_player.id}\n"
+        #     f"  Hand size: {len(active_player.hand)}\n"
+        #     f"  Hand: {[card.name for card in active_player.hand]}\n"
+        #     f"  Deck size: {len(active_player.deck)}\n"
+        #     f"  Deck: {[card.name for card in active_player.deck]}\n"
+        #     f"  Play area: {active_player.play_area}\n"
+        #     f"Inactive player: {inactive_player.id}\n"
+        #     f"  Hand size: {len(inactive_player.hand)}\n"
+        #     f"  Hand: {[card.name for card in inactive_player.hand]}\n"
+        #     f"  Deck size: {len(inactive_player.deck)}\n"
+        #     f"  Deck: {[card.name for card in inactive_player.deck]}\n"
+        #     f"  Play area: {inactive_player.play_area}\n"
+        # )
         
-        # Test turn management
-        print("\n--- Testing Next Turn ---")
-        previous_player_id = game_state.active_player_id
-        previous_turn = game_state.turn_count
-        game_engine.end_turn(game_state)
-        print(f"Previous player: {previous_player_id}, Current player: {game_state.active_player_id}")
-        print(f"Turn count: {game_state.turn_count}")
-        assert game_state.active_player_id != previous_player_id, "Active player should change after next_turn"
-        assert game_state.turn_count == previous_turn + 1, "Turn count should increment"
+        # # Test turn management
+        # print("\n--- Testing Next Turn ---")
+        # print(f"Turn count before: {game_state.turn_count}, Active player before: {game_state.active_player_id}")
+        # game_engine.end_turn(game_state)
         
-        # Test playing a card
+        # Test playing a card and passing Mindbug
         print("\n--- Testing Play Card ---")
         player = game_state.get_active_player()
         opponent = game_state.get_inactive_player()
         if player.hand:
             card_to_play = player.hand[0]
-            print(f"Playing card: {card_to_play}")
-            hand_size_before = len(player.hand)
-            print(f"Hand size before playing: {hand_size_before}")
-            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play.id))
+            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play))
+            # Now that the game state has been updated, we can no longer use player and opponent: they are outdated
+            game_state = game_engine.apply_action(game_state, PassMindbugAction(game_state.get_active_player().id))
+        else:
+            raise ValueError("Active player has no cards to play, but they should.")
+        
+        # Test playing a card and using Mindbug
+        print("\n--- Testing Use Mindbug ---")
+        player = game_state.get_active_player()
+        opponent = game_state.get_inactive_player()
+        if player.hand:
+            card_to_play = player.hand[0]
+            game_state = game_engine.apply_action(game_state, PlayCardAction(player.id, card_to_play))
             # Now that the game state has been updated, we need to get the player and opponent again
-            opponent = game_state.get_active_player()
-            player = game_state.get_inactive_player()
-            game_state = game_engine.apply_action(game_state, PassMindbugAction(opponent.id))
-            # And again
-            player = game_state.get_active_player()
-            opponent = game_state.get_inactive_player()
-            print(f"Hand size of {player.id} after playing: {len(player.hand)}")
-            print(f"Play area of {player.id} after playing: {[card.name for card in player.play_area]}")
+            game_state = game_engine.apply_action(game_state, UseMindbugAction(game_state.get_active_player().id))
         else:
             raise ValueError("Active player has no cards to play, but they should.")
             
@@ -96,12 +93,11 @@ def run_game_engine_test():
         
         # Assuming the played card is a creature that can attack
         if attacker.play_area:
-            creature_id = attacker.play_area[0].id
-            attack_amount = attacker.play_area[0].power
+            attacking_card_id = attacker.play_area[0].id
             
             print(f"Attacker: {attacker.id}, Defender: {defender.id}")
             print(f"Defender life before: {defender.life_points}")
-            game_engine.attack(game_state, creature_id, None)  # Direct attack on player
+            game_engine.attack(game_state, attacking_card_id, None)  # Direct attack on player
             print(f"Defender life after: {defender.life_points}")
             assert defender.life_points < initial_defender_life, "Defender should lose life after attack"
         

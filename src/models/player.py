@@ -104,8 +104,8 @@ class Player:
         Returns:
             bool: True if a mindbug was used, False if none remaining
         """
-        if self.mindbugs_remaining > 0:
-            self.mindbugs_remaining -= 1
+        if self.mindbugs > 0:
+            self.mindbugs -= 1
             return True
         return False
     
@@ -126,7 +126,7 @@ class Player:
         return False
     
     def __str__(self) -> str:
-        return f"Player {self.id}: {len(self.hand)} cards in hand, {self.life_points} life, {self.mindbugs_remaining} mindbugs"
+        return f"Player {self.id}: {len(self.hand)} cards in hand, {self.life_points} life, {self.mindbugs} mindbugs"
     
     def copy(self) -> 'Player':
         """

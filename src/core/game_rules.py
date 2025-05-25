@@ -138,7 +138,7 @@ class GameRules:
 
     def activate_play_ability(self, game_state: GameState, card_played: Card, player_who_played_id: str) -> GameState:
         """Activates a card's 'Play' ability."""
-        print(f"Activating Play ability for {card_played.name} (played by {player_who_played_id})")
+        print(f"Activating Play ability of {card_played.name} for {player_who_played_id}")
         handler = self.play_ability_handlers.get(card_played.id)
         if handler:
             # Pass only necessary information; might need to pass card_played object if ability modifies it
@@ -171,6 +171,7 @@ class GameRules:
 
         # Player gains 2 life
         player.life_points += 2
+        print(f"{player_id} gains 2 life points. New life: {player.life_points}")
 
         return game_state
 

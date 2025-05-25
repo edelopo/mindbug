@@ -44,16 +44,10 @@ class GameEngine:
     def _handle_play_card_action(self, game_state: GameState, action: PlayCardAction) -> GameState:
         player = game_state.get_active_player()
         opponent = game_state.get_inactive_player()
-        card_to_play = None
+        card_to_play = action.card
 
-        # Find the card in hand
-        for card in player.hand:
-            if card.id == action.card_id:
-                card_to_play = card
-                break
-
-        if not card_to_play:
-            print(f"Error: Card '{action.card_id}' not found in {player.id}'s hand.")
+        if card_to_play not in player.hand:
+            print(f"Error: Card '{card_to_play}' not found in {player.id}'s hand.")
             return game_state # Invalid action, return original state
 
         # 1. Remove card from hand
@@ -69,7 +63,6 @@ class GameEngine:
         game_state.phase = "mindbug_phase" # Set phase to mindbug
         game_state.switch_active_player() # Switch to opponent for Mindbug decision
         # Store the card being played temporarily for Mindbug decision
-        game_state._pending_mindbug_card = card_to_play
         
         print(f"{opponent.id}, do you want to Mindbug {card_to_play.name}?")
         # The game loop will now wait for a UseMindbugAction or PassMindbugAction from inactive player.
@@ -79,22 +72,15 @@ class GameEngine:
     def _handle_mindbug_response(self, game_state: GameState, action: Action) -> GameState:
         opponent = game_state.get_active_player() # In mindbug phase, the "active" player is the opponent.
         player = game_state.get_inactive_player() # The player who originally played the card.
-        
-        played_card = game_state._pending_mindbug_card
-        if not played_card:
-            raise ValueError("No card pending Mindbug response. This should not happen.")
+        played_card = player.play_area[-1]  # Get the last played card (the one being Mindbugged)
 
         if action.player_id != opponent.id:
             print(f"Invalid Mindbug response: Not {opponent.id}'s turn to respond.")
             return game_state
         
         if isinstance(action, UseMindbugAction):
-            if action.played_card_id != played_card.id:
-                 print(f"Error: Mindbug action target ({action.played_card_id}) does not match pending card ({played_card.id}).")
-                 return game_state
-
             if opponent.mindbugs:
-                mindbug_card = opponent.use_mindbug()
+                opponent.use_mindbug()
                 print(f"{opponent.id} uses a Mindbug on {played_card.name}!")
 
                 # 1. Add played card to opponent's battlefield
@@ -117,8 +103,7 @@ class GameEngine:
             game_state.switch_active_player() # Switch back to original player
             game_state = self.game_rules.activate_play_ability(game_state, played_card, game_state.active_player_id)
 
-        game_state.phase = "end_turn_phase"
-        game_state._pending_mindbug_card = None # Clean up
+        game_state = self.end_turn(game_state) # End turn after Mindbug resolution
         return game_state
 
     # def _finalize_play_card_after_no_mindbug(self, game_state: GameState, card_to_play: Card) -> GameState:
@@ -298,9 +283,14 @@ class GameEngine:
         if game_state.is_game_over():
             return game_state
         
+        print(f"Turn {game_state.turn_count} ended.\n")
         game_state.switch_active_player() # Switch active player
         game_state.turn_count += 1 # Increment turn count
         print(f"Turn {game_state.turn_count}: {game_state.active_player_id} to play or attack.")
+        print("Current state of the game:")
+        for player_id, player in game_state.players.items():
+            print(f"{player_id}'s play area: {[c.name for c in player.play_area]}\n"
+                  f"{player.life_points} life points, {player.mindbugs} mindbugs.")
         game_state.phase = "play_phase"
 
         return game_state
