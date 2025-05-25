@@ -66,7 +66,17 @@ class Card:
         Returns:
             str: A formatted string with card information
         """
-        return f"{self.name}"
+        text = (
+            f"Card Details:\n"
+            f"----------------\n"
+            f"| Name: {self.name}\n" 
+            f"| ID: {self.id}\n"
+            f"| UUID: {self.uuid}\n"
+            f"| Power: {self.power}\n"
+            f"| Keywords: {', '.join(self.keywords) if self.keywords else 'None'}\n"
+            f"| Abilities: {self.ability_text if self.ability_text else 'None'}"
+        )
+        return text
     
     # def __deepcopy__(self) -> 'Card':
     #     """

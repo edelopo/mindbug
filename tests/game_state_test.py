@@ -48,6 +48,8 @@ def run_game_state_test():
             f"  Deck: {[card.name for card in inactive_player.deck]}\n"
             f"  Play area: {inactive_player.play_area}\n"
         )
+
+        print(active_player.hand[0])
         
         # # Test turn management
         # print("\n--- Testing Next Turn ---")
