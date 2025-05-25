@@ -85,7 +85,7 @@ def run_game_engine_test():
             
         # Test attacking
         print("\n--- Testing Attack ---")
-        gamestate = game_engine.end_turn(game_state)  # Pass turn so that the attacker has cards in play
+        game_state = game_engine.end_turn(game_state)  # Pass turn so that the attacker has cards in play
         attacker = game_state.get_active_player()
         defender = game_state.get_inactive_player()
         initial_defender_life = defender.life_points
@@ -97,6 +97,10 @@ def run_game_engine_test():
             game_state = game_engine.apply_action(game_state, AttackAction(attacker.id, attacking_card.uuid))
             defender = game_state.get_active_player()  # Get updated defender after attack (active player has changed)
             assert defender.life_points < initial_defender_life, "Defender should lose life after attack"
+
+        # Test blocking an attack
+        print("\n--- Testing Block ---")
+
         
         # # Test game over conditions
         # print("\n--- Testing Game Over Conditions ---")
