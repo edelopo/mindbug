@@ -9,7 +9,7 @@ from src.utils.data_loader import load_definitions_from_json, load_cards_from_js
 from src.models.player import Player
 from src.models.game_state import GameState
 from src.core.game_engine import GameEngine
-from src.models.action import PlayCardAction, PassMindbugAction, UseMindbugAction
+from src.models.action import *
 import traceback
 
 def run_game_engine_test():
@@ -83,21 +83,20 @@ def run_game_engine_test():
         else:
             raise ValueError("Active player has no cards to play, but they should.")
             
-        # # Test attacking
-        # print("\n--- Testing Attack ---")
-        # attacker = game_state.get_active_player()
-        # defender = game_state.get_inactive_player()
-        # initial_defender_life = defender.life_points
+        # Test attacking
+        print("\n--- Testing Attack ---")
+        gamestate = game_engine.end_turn(game_state)  # Pass turn so that the attacker has cards in play
+        attacker = game_state.get_active_player()
+        defender = game_state.get_inactive_player()
+        initial_defender_life = defender.life_points
         
-        # # Assuming the played card is a creature that can attack
-        # if attacker.play_area:
-        #     attacking_card_id = attacker.play_area[0].id
+        # Assuming the played card is a creature that can attack
+        if attacker.play_area:
+            attacking_card = attacker.play_area[0]
             
-        #     print(f"Attacker: {attacker.id}, Defender: {defender.id}")
-        #     print(f"Defender life before: {defender.life_points}")
-        #     game_engine.attack(game_state, attacking_card_id, None)  # Direct attack on player
-        #     print(f"Defender life after: {defender.life_points}")
-        #     assert defender.life_points < initial_defender_life, "Defender should lose life after attack"
+            game_state = game_engine.apply_action(game_state, AttackAction(attacker.id, attacking_card))
+            defender = game_state.get_active_player()  # Get updated defender after attack (active player has changed)
+            assert defender.life_points < initial_defender_life, "Defender should lose life after attack"
         
         # # Test game over conditions
         # print("\n--- Testing Game Over Conditions ---")

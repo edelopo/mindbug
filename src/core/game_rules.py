@@ -122,7 +122,7 @@ class GameRules:
         """A player loses life."""
         player_losing_life = game_state.get_player(player_id)
         player_losing_life.life_points -= amount
-        print(f"{player_id} loses {amount} life points.")
+        print(f"{player_id} loses {amount} life points, now they have {player_losing_life.life_points} life points left.")
 
         if player_losing_life.life_points <= 0:
             # Player has no life points left, they lose the game
@@ -139,27 +139,30 @@ class GameRules:
 
     def activate_play_ability(self, game_state: GameState, card_played: Card, player_who_played_id: str) -> GameState:
         """Activates a card's 'Play' ability."""
-        print(f"Activating Play ability of {card_played.name} for {player_who_played_id}")
-        handler = self.play_ability_handlers.get(card_played.id)
-        if handler:
-            # Pass only necessary information; might need to pass card_played object if ability modifies it
-            game_state = handler(copy.deepcopy(game_state), card_played, player_who_played_id) # Pass a copy to avoid side effects if modifying state in handler
+        if card_played.ability_type == "play":
+            print(f"Activating Play ability of {card_played.name} for {player_who_played_id}")
+            handler = self.play_ability_handlers.get(card_played.id)
+            if handler:
+                # Pass only necessary information; might need to pass card_played object if ability modifies it
+                game_state = handler(copy.deepcopy(game_state), card_played, player_who_played_id) # Pass a copy to avoid side effects if modifying state in handler
         return game_state
 
     def activate_attack_ability(self, game_state: GameState, attacking_card: Card) -> GameState:
         """Activates a card's 'Attack' ability."""
-        print(f"Activating Attack ability for {attacking_card.name}")
-        handler = self.attack_ability_handlers.get(attacking_card.id)
-        if handler:
-            game_state = handler(copy.deepcopy(game_state), attacking_card)
+        if attacking_card.ability_type == "attack":
+            print(f"Activating Attack ability for {attacking_card.name}")
+            handler = self.attack_ability_handlers.get(attacking_card.id)
+            if handler:
+                game_state = handler(copy.deepcopy(game_state), attacking_card)
         return game_state
 
     def activate_defeated_ability(self, game_state: GameState, defeated_card: Card) -> GameState:
         """Activates a card's 'Defeated' ability."""
-        print(f"Activating Defeated ability for {defeated_card.name}")
-        handler = self.defeated_ability_handlers.get(defeated_card.id)
-        if handler:
-            game_state = handler(copy.deepcopy(game_state), defeated_card)
+        if defeated_card.ability_type == "defeated":
+            print(f"Activating Defeated ability for {defeated_card.name}")
+            handler = self.defeated_ability_handlers.get(defeated_card.id)
+            if handler:
+                game_state = handler(copy.deepcopy(game_state), defeated_card)
         return game_state
 
     # --- Specific Card Ability Implementations ---

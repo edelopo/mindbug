@@ -34,8 +34,8 @@ class GameEngine:
 
         if isinstance(action, PlayCardAction):
             return self._handle_play_card_action(new_state, action)
-        # elif isinstance(action, AttackAction):
-        #     return self._handle_attack_action(new_state, action)
+        elif isinstance(action, AttackAction):
+            return self._handle_attack_action(new_state, action)
         else:
             print(f"Unknown or invalid action type: {type(action)}")
             return new_state
@@ -114,11 +114,16 @@ class GameEngine:
     def _handle_attack_action(self, game_state: GameState, action: AttackAction) -> GameState:
         attacker = game_state.get_active_player()
         blocker = game_state.get_inactive_player()
-        attacking_card = action.attacking_card
+        attacking_card_uuid = action.attacking_card.uuid
 
-        if attacking_card not in attacker.play_area:
-            print(f"Error: Card '{attacking_card.name}' not found in {attacker.id}'s play area.")
+        for card in attacker.play_area:
+            if card.uuid == attacking_card_uuid:
+                attacking_card = card
+                break
+        else:
+            print(f"Error: Card UUID '{attacking_card_uuid}' not found in {attacker.id}'s play area.")
             return game_state # Invalid action, return original state
+        # attacking_card = action.attacking_card
 
         print(f"{attacker.id}'s {attacking_card.name} attacks!")
 
@@ -139,6 +144,7 @@ class GameEngine:
             # No blockers available, opponent takes damage
             print(f"{blocker.id} has no valid blockers. {attacker.id} deals damage directly!")
             game_state = self.game_rules.lose_life(game_state, blocker.id)
+            game_state = self.end_turn(game_state)  # End turn after attack resolution
             return game_state
         else:
             # Opponent has blockers, transition to block phase
