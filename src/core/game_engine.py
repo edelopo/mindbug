@@ -65,6 +65,7 @@ class GameEngine:
             print(f"{player.id} draws {drawn_card.name} to refill hand.")
         
         # 3. Opponent gets a chance to Mindbug (Crucial Mindbug mechanic!)
+        game_state._pending_mindbug_card_uuid = card_to_play.uuid # Store the card being played for Mindbug decision
         game_state.phase = "mindbug_phase" # Set phase to mindbug
         game_state.switch_active_player() # Switch to opponent for Mindbug decision
         # Store the card being played temporarily for Mindbug decision
@@ -77,7 +78,15 @@ class GameEngine:
     def _handle_mindbug_response(self, game_state: GameState, action: Action) -> GameState:
         opponent = game_state.get_active_player() # In mindbug phase, the "active" player is the opponent.
         player = game_state.get_inactive_player() # The player who originally played the card.
-        played_card = player.play_area[-1]  # Get the last played card (the one being Mindbugged)
+        # Get the card pending Mindbug response
+        played_card = None
+        for card in player.play_area:
+            if card.uuid == game_state._pending_mindbug_card_uuid:
+                played_card = card
+                break
+        else:
+            print(f"Invalid Mindbug response: No played card found for UUID {game_state._pending_mindbug_card_uuid}.")
+            return game_state
 
         if action.player_id != opponent.id:
             print(f"Invalid Mindbug response: Not {opponent.id}'s turn to respond.")
@@ -108,6 +117,7 @@ class GameEngine:
             game_state.switch_active_player() # Switch back to original player
             game_state = self.game_rules.activate_play_ability(game_state, played_card, game_state.active_player_id)
 
+        game_state._pending_mindbug_card_uuid = None # Clear pending Mindbug state
         game_state = self.end_turn(game_state) # End turn after Mindbug resolution
         return game_state
 
@@ -150,7 +160,7 @@ class GameEngine:
             # Opponent has blockers, transition to block phase
             print(f"{blocker.id} has valid blockers. Transitioning to block phase.")
             game_state.phase = "block_phase"
-            game_state._pending_attack_card = attacking_card
+            game_state._pending_attack_card_uuid = attacking_card
 
         # --- IMPORTANT ---
         # Here, the GameEngine needs to *ask* the opponent's agent for a BlockAction.

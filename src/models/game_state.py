@@ -1,7 +1,8 @@
 # src/models/game_state.py
 import random
 import copy
-from typing import Dict, List, Optional # For type hints
+import uuid
+from typing import Dict, List, Optional, TYPE_CHECKING # For type hints
 from src.models.player import Player
 from src.models.card import Card
 
@@ -33,6 +34,8 @@ class GameState:
         self.phase = phase
         self.game_over = game_over
         self.winner_id = winner_id
+        self._pending_mindbug_card_uuid: Optional[uuid.UUID] = None
+        self._pending_attack_card_uuid: Optional[uuid.UUID] = None
 
     @classmethod
     def initial_state(cls,
