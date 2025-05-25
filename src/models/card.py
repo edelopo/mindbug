@@ -1,9 +1,11 @@
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
+import uuid
+import copy
 if TYPE_CHECKING:
     from src.models.player import Player
 
 class Card:
-    def __init__(self, card_id: str, name: str, 
+    def __init__(self, id:str, name: str, 
                  power: int, keywords: List[str],
                  ability_type: str, ability_text: str,
                  is_exhausted: bool = False, controller: Optional['Player'] = None) -> None:
@@ -11,14 +13,15 @@ class Card:
         Initialize a Card object with data from cards.json
         
         Args:
-            card_id: Unique identifier for the card
+            uuid: Code-appropiate identifier for the card
             name: Name of the card
             power: Power value for creatures
             keywords: List of card keywords (e.g., poisonous, tough)
             ability_type: Type of ability (e.g., attack, passive)
             ability_text: Text description of the card
         """
-        self.id: str = card_id
+        self.uuid: uuid.UUID = uuid.uuid4()  # Generate a unique ID for the card
+        self.id: str = id
         self.name: str = name
         self.power: int = power
         self.keywords: List[str] = keywords or []
@@ -39,7 +42,7 @@ class Card:
             Card: A new Card instance
         """
         return cls(
-            card_id = data.get('id', ''),
+            id = data.get('id', ''),
             name = data.get('name', ''),
             power = data.get('base_power', -1),
             keywords = data.get('keywords', []),
@@ -65,19 +68,19 @@ class Card:
         """
         return f"{self.name}"
     
-    def copy(self) -> 'Card':
-        """
-        Create a deep copy of the card.
-        Returns:
-            Card: A new Card object with the same attributes
-        """
-        return Card(
-            card_id=self.id,
-            name=self.name,
-            power=self.power,
-            keywords=self.keywords.copy(),
-            ability_type=self.ability_type,
-            ability_text=self.ability_text,
-            is_exhausted=self.is_exhausted,
-            controller=self.controller
-        )
+    # def __deepcopy__(self) -> 'Card':
+    #     """
+    #     Create a deep copy of the card.
+    #     Returns:
+    #         Card: A new Card object with the same attributes
+    #     """
+    #     return Card(
+    #         card_id=self.id,
+    #         name=self.name,
+    #         power=self.power,
+    #         keywords=copy.deepcopy(self.keywords),
+    #         ability_type=self.ability_type,
+    #         ability_text=self.ability_text,
+    #         is_exhausted=self.is_exhausted,
+    #         controller=self.controller
+    #     )

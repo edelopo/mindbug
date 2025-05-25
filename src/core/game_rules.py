@@ -1,4 +1,5 @@
 import random
+import copy
 from typing import Dict, List, Optional, Tuple
 from src.models.game_state import GameState
 from src.models.card import Card
@@ -142,7 +143,7 @@ class GameRules:
         handler = self.play_ability_handlers.get(card_played.id)
         if handler:
             # Pass only necessary information; might need to pass card_played object if ability modifies it
-            game_state = handler(game_state.copy(), card_played, player_who_played_id) # Pass a copy to avoid side effects if modifying state in handler
+            game_state = handler(copy.deepcopy(game_state), card_played, player_who_played_id) # Pass a copy to avoid side effects if modifying state in handler
         return game_state
 
     def activate_attack_ability(self, game_state: GameState, attacking_card: Card) -> GameState:
@@ -150,7 +151,7 @@ class GameRules:
         print(f"Activating Attack ability for {attacking_card.name}")
         handler = self.attack_ability_handlers.get(attacking_card.id)
         if handler:
-            game_state = handler(game_state.copy(), attacking_card)
+            game_state = handler(copy.deepcopy(game_state), attacking_card)
         return game_state
 
     def activate_defeated_ability(self, game_state: GameState, defeated_card: Card) -> GameState:
@@ -158,7 +159,7 @@ class GameRules:
         print(f"Activating Defeated ability for {defeated_card.name}")
         handler = self.defeated_ability_handlers.get(defeated_card.id)
         if handler:
-            game_state = handler(game_state.copy(), defeated_card)
+            game_state = handler(copy.deepcopy(game_state), defeated_card)
         return game_state
 
     # --- Specific Card Ability Implementations ---
@@ -221,9 +222,11 @@ class GameRules:
     # --- Utility methods for rules ---
     # These might be used by GameEngine to determine valid actions or apply effects.
 
-    def is_card_valid_blocker(self, attacker: Card, blocker: Card) -> bool:
-        """Checks if a blocker is valid against an attacker given keywords like Sneaky."""
-        if "Sneaky" in attacker.keywords and "Sneaky" not in blocker.keywords:
+    def is_card_valid_blocker(self, blocking_card: Card, attacking_card: Card,
+                              blocker_play_area: List[Card], attacker_play_area: List[Card]) -> bool:
+        """Checks if a blocker is valid."""
+
+        if "Sneaky" in attacking_card.keywords and "Sneaky" not in blocking_card.keywords:
             return False # Sneaky can only be blocked by Sneaky
         # Add other blocking rules if they exist (e.g., cards that cannot block)
         return True

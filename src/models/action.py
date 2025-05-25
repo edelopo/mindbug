@@ -19,14 +19,13 @@ class PlayCardAction(Action):
         return f"PlayCardAction(Player: {self.player_id}, Card: {self.card.id})"
 
 class AttackAction(Action):
-    def __init__(self, player_id: str, attacking_card_id: str, target_id: str):
+    def __init__(self, player_id: str, attacking_card: 'Card'):
         super().__init__(player_id)
-        self.attacking_card_id = attacking_card_id
-        self.target_id = target_id # Can be opponent's card_id or opponent's player_id
+        self.attacking_card = attacking_card
 
     def __repr__(self):
         return (f"AttackAction(Player: {self.player_id}, "
-                f"Attacker: {self.attacking_card_id}, Target: {self.target_id})")
+                f"Attacker: {self.attacking_card})")
 
 class BlockAction(Action):
     def __init__(self, player_id: str, attacking_card_id: str, blocking_card_id: Optional[str] = None):

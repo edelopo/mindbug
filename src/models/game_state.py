@@ -1,5 +1,6 @@
 # src/models/game_state.py
 import random
+import copy
 from typing import Dict, List, Optional # For type hints
 from src.models.player import Player
 from src.models.card import Card
@@ -128,27 +129,24 @@ class GameState:
     # If your GameEngine methods modify the state in place, you NEED this.
     # If they return a *new* state, this isn't strictly necessary for every step,
     # but still good for initial state exploration in AI.
-    def copy(self):
-        """
-        Creates a deep copy of the current GameState.
-        Crucial for AI algorithms like MCTS that need to simulate many futures
-        without altering the original state.
-        """
-        # Deep copy all mutable containers
-        players_copy = {
-            pid: player.copy() # Assuming Player has a copy method
-            for pid, player in self.players.items()
-        }
+    # def copy(self):
+    #     """
+    #     Creates a deep copy of the current GameState.
+    #     Crucial for AI algorithms like MCTS that need to simulate many futures
+    #     without altering the original state.
+    #     """
+    #     # Deep copy all mutable containers
+    #     players_copy = {pid: copy.deepcopy(player) for pid, player in self.players.items()}
 
-        return GameState(
-            active_player_id=self.active_player_id,
-            inactive_player_id=self.inactive_player_id,
-            players=players_copy,
-            turn_count=self.turn_count,
-            phase=self.phase,
-            game_over=self.game_over,
-            winner_id=self.winner_id
-        )
+    #     return GameState(
+    #         active_player_id=self.active_player_id,
+    #         inactive_player_id=self.inactive_player_id,
+    #         players=players_copy,
+    #         turn_count=self.turn_count,
+    #         phase=self.phase,
+    #         game_over=self.game_over,
+    #         winner_id=self.winner_id
+    #     )
 
     def __repr__(self):
         active_player = self.get_active_player()
@@ -157,8 +155,8 @@ class GameState:
         return (
             f"--- GameState (Turn {self.turn_count}, Phase: {self.phase}) ---\n"
             f"Active Player: {active_player.id} (Life: {active_player.life_points}, Hand: {len(active_player.hand)}, Deck: {len(active_player.deck)}, Mindbugs: {active_player.mindbugs})\n"
-            f"  Battlefield: {[c.name for c in active_player.play_area]}\n"
+            f"  Play area: {[c.name for c in active_player.play_area]}\n"
             f"Inactive Player: {inactive_player.id} (Life: {inactive_player.life_points}, Hand: {len(inactive_player.hand)}, Deck: {len(inactive_player.deck)}, Mindbugs: {inactive_player.mindbugs})\n"
-            f"  Battlefield: {[c.name for c in inactive_player.play_area]}\n"
+            f"  Play area: {[c.name for c in inactive_player.play_area]}\n"
             f"Game Over: {self.game_over}, Winner: {self.winner_id if self.game_over else 'N/A'}"
         )

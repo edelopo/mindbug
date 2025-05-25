@@ -1,5 +1,6 @@
 from typing import List, Optional
 from src.models.card import Card
+import copy
 
 class Player:
     def __init__(self, id: str, deck: Optional[List[Card]] = None, hand: Optional[List[Card]] = None, 
@@ -128,19 +129,19 @@ class Player:
     def __str__(self) -> str:
         return f"Player {self.id}: {len(self.hand)} cards in hand, {self.life_points} life, {self.mindbugs} mindbugs"
     
-    def copy(self) -> 'Player':
-        """
-        Create a deep copy of the player.
+    # def __deepcopy__(self) -> 'Player':
+    #     """
+    #     Create a deep copy of the player.
         
-        Returns:
-            Player: A new Player object with the same attributes
-        """
-        return Player(
-            id=self.id,
-            deck=self.deck.copy(),
-            hand=self.hand.copy(),
-            discard_pile=self.discard_pile.copy(),
-            play_area=self.play_area.copy(),
-            life_points=self.life_points,
-            mindbugs=self.mindbugs
-        )
+    #     Returns:
+    #         Player: A new Player object with the same attributes
+    #     """
+    #     return Player(
+    #         id=self.id,
+    #         deck=copy.deepcopy(self.deck),
+    #         hand=copy.deepcopy(self.hand),
+    #         discard_pile=copy.deepcopy(self.discard_pile),
+    #         play_area=copy.deepcopy(self.play_area),
+    #         life_points=self.life_points,
+    #         mindbugs=self.mindbugs
+    #     )

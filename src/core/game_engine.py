@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional, Tuple
+import copy
 from src.models.game_state import GameState
 from src.models.action import (
     Action, PlayCardAction, AttackAction,
@@ -20,7 +21,7 @@ class GameEngine:
             print("Game is already over. Cannot apply more actions.")
             return game_state
 
-        new_state = game_state.copy() # Always work on a copy for AI robustness
+        new_state = copy.deepcopy(game_state)
 
         if new_state.phase == "mindbug_phase":
             # Handle Mindbug response actions (UseMindbugAction, PassMindbugAction)
@@ -44,12 +45,16 @@ class GameEngine:
     def _handle_play_card_action(self, game_state: GameState, action: PlayCardAction) -> GameState:
         player = game_state.get_active_player()
         opponent = game_state.get_inactive_player()
-        card_to_play = action.card
+        card_to_play_uuid = action.card.uuid
 
-        if card_to_play not in player.hand:
-            print(f"Error: Card '{card_to_play}' not found in {player.id}'s hand.")
+        for card in player.hand:
+            if card.uuid == card_to_play_uuid:
+                card_to_play = card
+                break
+        else:
+            print(f"Error: Card UUID '{card_to_play_uuid}' not found in {player.id}'s hand.")
             return game_state # Invalid action, return original state
-
+            
         # 1. Remove card from hand
         player.play_card(card_to_play) # player.play_card removes it from hand and adds it to play_area.
         print(f"{player.id} plays {card_to_play.name}.")
@@ -106,110 +111,100 @@ class GameEngine:
         game_state = self.end_turn(game_state) # End turn after Mindbug resolution
         return game_state
 
-    # def _finalize_play_card_after_no_mindbug(self, game_state: GameState, card_to_play: Card) -> GameState:
-    #     """
-    #     Leaves the card on the battlefield of the original player and resolves its play effect.
-    #     """
-    #     game_state = self.game_rules.activate_play_ability(game_state, card_to_play, game_state.active_player_id)
+    def _handle_attack_action(self, game_state: GameState, action: AttackAction) -> GameState:
+        attacker = game_state.get_active_player()
+        blocker = game_state.get_inactive_player()
+        attacking_card = action.attacking_card
+
+        if attacking_card not in attacker.play_area:
+            print(f"Error: Card '{attacking_card.name}' not found in {attacker.id}'s play area.")
+            return game_state # Invalid action, return original state
+
+        print(f"{attacker.id}'s {attacking_card.name} attacks!")
+
+        # Activate "Attack" abilities (e.g., Tusked Extorter)
+        game_state = self.game_rules.activate_attack_ability(game_state, attacking_card)
+
+        # Check if opponent has a blocker
+        exist_valid_blockers = False
+        for card in blocker.play_area:
+            if self.game_rules.is_card_valid_blocker(
+                blocking_card=card, attacking_card=attacking_card, 
+                blocker_play_area=blocker.play_area, attacker_play_area=attacker.play_area
+            ):
+                exist_valid_blockers = True
+                break
         
-    #     # The `GameEngine`'s role is to ensure `game_state.phase` is updated
-    #     # and `game_state.active_player_id` is correct for the next action.
-    #     # After playing a card (and resolving Mindbug phase), the turn usually ends.
-    #     game_state.phase = "end_turn_phase" # Signal to main loop to end turn
-    #     return game_state
+        if not exist_valid_blockers:
+            # No blockers available, opponent takes damage
+            print(f"{blocker.id} has no valid blockers. {attacker.id} deals damage directly!")
+            game_state = self.game_rules.lose_life(game_state, blocker.id)
+            return game_state
+        else:
+            # Opponent has blockers, transition to block phase
+            print(f"{blocker.id} has valid blockers. Transitioning to block phase.")
+            game_state.phase = "block_phase"
+            game_state._pending_attack_card = attacking_card
 
+        # --- IMPORTANT ---
+        # Here, the GameEngine needs to *ask* the opponent's agent for a BlockAction.
+        # This implies a mini-turn for the opponent.
+        # For a simple text-based game, you'd prompt the opponent.
+        # For AI, the opponent's agent would `choose_action(game_state)` with current phase being "block_phase".
 
-    # def _handle_attack_action(self, game_state: GameState, action: AttackAction) -> GameState:
-    #     player = game_state.get_active_player()
-    #     opponent = game_state.get_inactive_player()
-
-    #     # Find attacking card
-    #     attacking_card: Optional[Card] = None
-    #     for card in game_state.battlefield[player.id]:
-    #         if card.id == action.attacking_card_id:
-    #             attacking_card = card
-    #             break
-
-    #     if not attacking_card or attacking_card.is_exhausted:
-    #         print(f"Error: Invalid attacking card or it's exhausted: {action.attacking_card_id}")
-    #         return game_state
+        # For now, let's simplify and immediately resolve by checking action.target_id.
+        # In a real engine, `apply_action` would check the phase and delegate.
+        # Let's assume `AttackAction` has a `blocker_id` or `target_player_id`
+        # for now.
         
-    #     if attacking_card.has_attacked_this_turn and "Frenzy" not in attacking_card.keywords:
-    #         print(f"Error: {attacking_card.name} already attacked this turn and doesn't have Frenzy.")
-    #         return game_state
+        # The `AttackAction` should ideally *not* contain the blocker choice.
+        # Instead, the `GameEngine` transitions to a "block_phase" and expects a `BlockAction`.
 
-    #     attacking_card.is_exhausted = True # Attacker becomes exhausted
-    #     attacking_card.has_attacked_this_turn = True # Mark it as attacked
-    #     print(f"{player.id}'s {attacking_card.name} attacks!")
-
-    #     # Activate "Attack" abilities (e.g., Tusked Extorter)
-    #     game_state = self.game_rules.activate_attack_ability(game_state, attacking_card)
-
-    #     # Check if opponent has a blocker (Mindbug rule: opponent can choose to block or take life)
-    #     opponent_cards = game_state.battlefield[opponent.id]
+        # Let's update `AttackAction` and `BlockAction` to reflect this phase
+        # Action: Attacker chooses target (player or card)
+        # Then, if target is card, or if target is player and opponent has blockers,
+        # opponent gets to choose a blocker.
         
-    #     # Filter valid blockers based on keywords (e.g., Sneaky)
-    #     valid_blockers = [c for c in opponent_cards if self.game_rules.is_card_valid_blocker(attacking_card, c)]
+        # Let's assume for this example, the AttackAction implies either attacking player or card.
+        # If `action.target_id` is a player ID, it's a direct attack.
+        # If `action.target_id` is a card ID, it's an attack on that card.
 
-    #     # --- IMPORTANT ---
-    #     # Here, the GameEngine needs to *ask* the opponent's agent for a BlockAction.
-    #     # This implies a mini-turn for the opponent.
-    #     # For a simple text-based game, you'd prompt the opponent.
-    #     # For AI, the opponent's agent would `choose_action(game_state)` with current phase being "block_phase".
+        target_card: Optional[Card] = None
+        for card in opponent_cards:
+            if card.id == action.target_id:
+                target_card = card
+                break
 
-    #     # For now, let's simplify and immediately resolve by checking action.target_id.
-    #     # In a real engine, `apply_action` would check the phase and delegate.
-    #     # Let's assume `AttackAction` has a `blocker_id` or `target_player_id`
-    #     # for now.
-        
-    #     # The `AttackAction` should ideally *not* contain the blocker choice.
-    #     # Instead, the `GameEngine` transitions to a "block_phase" and expects a `BlockAction`.
+        if target_card:
+            # Attacking a card directly (Mindbug doesn't work this way, usually)
+            # In Mindbug, you declare attack, opponent *chooses* to block or take life.
+            # So `AttackAction` should only specify attacker, not target.
+            # The GameEngine then asks for a `BlockAction`.
 
-    #     # Let's update `AttackAction` and `BlockAction` to reflect this phase
-    #     # Action: Attacker chooses target (player or card)
-    #     # Then, if target is card, or if target is player and opponent has blockers,
-    #     # opponent gets to choose a blocker.
-        
-    #     # Let's assume for this example, the AttackAction implies either attacking player or card.
-    #     # If `action.target_id` is a player ID, it's a direct attack.
-    #     # If `action.target_id` is a card ID, it's an attack on that card.
-
-    #     target_card: Optional[Card] = None
-    #     for card in opponent_cards:
-    #         if card.id == action.target_id:
-    #             target_card = card
-    #             break
-
-    #     if target_card:
-    #         # Attacking a card directly (Mindbug doesn't work this way, usually)
-    #         # In Mindbug, you declare attack, opponent *chooses* to block or take life.
-    #         # So `AttackAction` should only specify attacker, not target.
-    #         # The GameEngine then asks for a `BlockAction`.
-
-    #         # REVISED FLOW for Attack:
-    #         # 1. Player declares `AttackAction(player_id, attacking_card_id)`
-    #         # 2. GameEngine processes this, sets `game_state.phase = "block_phase"`
-    #         #    and stores `game_state._pending_attack_card = attacking_card`.
-    #         # 3. GameEngine then expects `BlockAction` from inactive player.
+            # REVISED FLOW for Attack:
+            # 1. Player declares `AttackAction(player_id, attacking_card_id)`
+            # 2. GameEngine processes this, sets `game_state.phase = "block_phase"`
+            #    and stores `game_state._pending_attack_card = attacking_card`.
+            # 3. GameEngine then expects `BlockAction` from inactive player.
             
-    #         print(f"Error: Mindbug attack logic implies player declares attack, opponent chooses block/life. "
-    #               f"AttackAction target should not be a card directly.")
-    #         return game_state # This branch indicates a misunderstanding of Mindbug attack rules.
+            print(f"Error: Mindbug attack logic implies player declares attack, opponent chooses block/life. "
+                  f"AttackAction target should not be a card directly.")
+            return game_state # This branch indicates a misunderstanding of Mindbug attack rules.
         
-    #     else: # Attacking opponent directly
-    #         print(f"{player.id}'s {attacking_card.name} attacks {opponent.id} directly!")
+        else: # Attacking opponent directly
+            print(f"{player.id}'s {attacking_card.name} attacks {opponent.id} directly!")
             
-    #         # Opponent decides to block or take life.
-    #         # This is where the game engine would prompt the opponent's agent.
-    #         # For now, let's assume if `target_id` is opponent_id, they *always* take life if they can't block.
-    #         # Or, for simplicity for now, they take a life if no blocker was provided.
+            # Opponent decides to block or take life.
+            # This is where the game engine would prompt the opponent's agent.
+            # For now, let's assume if `target_id` is opponent_id, they *always* take life if they can't block.
+            # Or, for simplicity for now, they take a life if no blocker was provided.
             
-    #         # This state needs to be set up to receive a BlockAction.
-    #         game_state.phase = "block_phase"
-    #         game_state._pending_attack_card = attacking_card # Store for block decision
-    #         game_state._current_attacker_player_id = player.id # Who is attacking
-    #         print(f"Waiting for {opponent.id} to choose a blocker or take life.")
-    #         return game_state # State is now waiting for block action
+            # This state needs to be set up to receive a BlockAction.
+            game_state.phase = "block_phase"
+            game_state._pending_attack_card = attacking_card # Store for block decision
+            game_state._current_attacker_player_id = player.id # Who is attacking
+            print(f"Waiting for {opponent.id} to choose a blocker or take life.")
+            return game_state # State is now waiting for block action
 
     # def _handle_block_action(self, game_state: GameState, action: BlockAction) -> GameState:
     #     opponent = game_state.get_active_player() # Opponent is active during block phase
