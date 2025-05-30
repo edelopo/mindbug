@@ -30,7 +30,7 @@ class MindbugCLI:
             for card in active_player.play_area:
                 exhausted_status = "(Exhausted)" if card.is_exhausted else ""
                 effective_power = GameRules.get_effective_power(game_state, card.uuid)
-                print(f"  - {card.name} (Power: {card.power}) {exhausted_status}")
+                print(f"  - {card.name} (Power: {effective_power}) {exhausted_status}")
         else:
             print("  (Empty)")
 
@@ -42,7 +42,8 @@ class MindbugCLI:
         if inactive_player.play_area:
             for card in inactive_player.play_area:
                 exhausted_status = "(Exhausted)" if card.is_exhausted else ""
-                print(f"  - {card.name} (Power: {card.power}) {exhausted_status}")
+                effective_power = GameRules.get_effective_power(game_state, card.uuid)
+                print(f"  - {card.name} (Power: {effective_power}) {exhausted_status}")        
         else:
             print("  (Empty)")
         print("="*40 + "\n")
