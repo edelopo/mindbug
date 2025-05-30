@@ -233,12 +233,12 @@ class GameEngine:
 
     # --- Check of possible actions ---
 
-    def get_valid_actions(self, game_state: GameState) -> List[Action]:
+    def get_valid_actions(self, game_state: GameState) -> List[Dict[str, Action | str]]:
         """
         Determines all legal actions the active player can take in the current game state.
         This is critical for AI and human input validation.
         """
-        valid_actions: List[Action] = []
+        valid_actions: List[Dict[str, Action | str]] = []
         active_player = game_state.get_active_player()
         inactive_player = game_state.get_inactive_player()
 
@@ -248,20 +248,23 @@ class GameEngine:
         if game_state.phase == "mindbug_phase":
             # During the mindbug phase, the active player must choose whether to use a mindbug or not.
             if active_player.mindbugs:
-                valid_actions.append(UseMindbugAction(active_player.id))
-            valid_actions.append(PassMindbugAction(active_player.id))
+                valid_actions.append({'action': UseMindbugAction(active_player.id)})
+            valid_actions.append({'action': PassMindbugAction(active_player.id)})
             return valid_actions
 
         elif game_state.phase == "play_phase":
             # During the play phase, the active player can play a card or attack with a card on the play area.
             for card in active_player.hand:
-                valid_actions.append(PlayCardAction(active_player.id, card.uuid))
+                valid_actions.append({'action': PlayCardAction(active_player.id, card.uuid),
+                                      'card_name': card.name})
             for card in active_player.play_area:
-                valid_actions.append(AttackAction(active_player.id, card.uuid))
+                valid_actions.append({'action': AttackAction(active_player.id, card.uuid),
+                                      'card_name': card.name})
 
         elif game_state.phase == "block_phase":
             # During the block phase, the active player is the opponent
-            valid_actions.append(BlockAction(active_player.id, None))  # Option to not block
+            valid_actions.append({'action': BlockAction(active_player.id, None),
+                                  'card_name': "None"})  # Option to not block
             attacking_card_uuid = game_state._pending_attack_card_uuid
             if attacking_card_uuid:
                 attacking_card = self.game_rules.get_card_by_uuid(game_state, attacking_card_uuid)
@@ -269,7 +272,8 @@ class GameEngine:
                     # Check if the card can block the pending attack
                     if self.game_rules.is_valid_blocker(card, attacking_card,
                                                         active_player.play_area, inactive_player.play_area):
-                        valid_actions.append(BlockAction(active_player.id, card.uuid))
+                        valid_actions.append({'action': BlockAction(active_player.id, card.uuid),
+                                              'card_name': card.name})
             else:
                 # Should not happen in "block_phase"
                 raise ValueError("Block phase entered without a pending attack card.")

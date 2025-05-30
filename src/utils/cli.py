@@ -1,7 +1,7 @@
 # CLI = Command Line Interface
 from src.models.game_state import GameState
 from src.models.action import Action
-from typing import List
+from typing import List, Dict
 
 class MindbugCLI:
     def display_game_state(self, game_state: GameState):
@@ -18,7 +18,7 @@ class MindbugCLI:
         print(f"\n--- {active_player.id}'s Board ---")
         print(f"Life: {active_player.life_points}, Mindbugs: {active_player.mindbugs}")
         print(f"Hand ({len(active_player.hand)} cards): {[card.name for card in active_player.hand]}")
-        print(f"Play Area ({len(active_player.play_area)} creatures):")
+        print(f"Play Area ({len(active_player.play_area)} cards):")
         if active_player.play_area:
             for creature in active_player.play_area:
                 exhausted_status = "(Exhausted)" if creature.is_exhausted else ""
@@ -28,7 +28,7 @@ class MindbugCLI:
 
         print(f"\n--- {inactive_player.id}'s Board ---")
         print(f"Life: {inactive_player.life_points}, Mindbugs: {inactive_player.mindbugs}")
-        print(f"Play Area ({len(inactive_player.play_area)} creatures):")
+        print(f"Play Area ({len(inactive_player.play_area)} cards):")
         if inactive_player.play_area:
             for creature in inactive_player.play_area:
                 print(f"  - {creature.name} (Power: {creature.power})")
@@ -36,20 +36,24 @@ class MindbugCLI:
             print("  (Empty)")
         print("="*40 + "\n")
 
-    def get_player_action(self, possible_actions: List[Action]) -> Action:
+    def get_player_action(self, possible_actions: List[Dict[str, Action | str]]) -> Action:
         """
         Prompts the human player to choose an action from a list of possibilities.
         """
         print("\nPossible actions:")
         for i, action in enumerate(possible_actions):
-            print(f"{i + 1}. {action}")
+            print(f"{i + 1}. {action['action']}. Card: {action['card_name']}")
 
         while True:
             try:
                 choice = input("Enter the number of your chosen action: ")
                 action_index = int(choice) - 1
                 if 0 <= action_index < len(possible_actions):
-                    return possible_actions[action_index]
+                    action = possible_actions[action_index]['action']
+                    if isinstance(action, Action):
+                        return action
+                    else:
+                        raise ValueError("Invalid action type.")
                 else:
                     print("Invalid action number. Please try again.")
             except ValueError:
