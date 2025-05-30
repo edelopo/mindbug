@@ -3,7 +3,6 @@ from src.core.game_engine import GameEngine
 from src.models.game_state import GameState
 from src.agents.human_agent import HumanAgent
 from src.utils.data_loader import load_cards_from_json, load_definitions_from_json
-from src.models.action import EndTurnAction # Ensure this is imported if used
 import os
 
 def run_game():
@@ -17,7 +16,8 @@ def run_game():
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
-    game_state = GameState.initial_state(player1_id, player2_id, all_cards_list)
+    game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
+                                         deck_size=4, hand_size=2)
 
     human_agent1 = HumanAgent(player1_id)
     human_agent2 = HumanAgent(player2_id)
@@ -31,23 +31,17 @@ def run_game():
 
         print(f"\n--- It's {active_player_id}'s Turn (Phase: {game_state.phase}) ---")
 
-        possible_actions = game_engine.get_possible_actions(game_state)
+        valid_actions = game_engine.get_valid_actions(game_state)
         
-        if not possible_actions and not game_state.game_over:
+        if not valid_actions and not game_state.game_over:
             print(f"{active_player_id} has no valid actions and loses!")
             game_state.game_over = True
             game_state.winner_id = game_state.inactive_player_id
             break
 
-        chosen_action = active_agent.choose_action(game_state, possible_actions)
+        chosen_action = active_agent.choose_action(game_state, valid_actions)
 
         game_state = game_engine.apply_action(game_state, chosen_action)
-
-        if isinstance(chosen_action, EndTurnAction):
-            print(f"{active_player_id} ends their turn.")
-            game_state.switch_active_player()
-            game_state.turn_count += 1
-            game_state.phase = "play_phase" # Reset phase for next player
 
         if game_state.game_over:
             print(f"\n--- Game Over! ---")

@@ -23,7 +23,7 @@ class GameState:
             inactive_player_id: The ID of the other player.
             players: A dictionary mapping player IDs to Player objects.
             turn_count: The current turn number.
-            phase: The current phase of the turn (e.g., "draw_phase", "play_phase", etc.).
+            phase: The current phase of the turn (e.g., "mindbug_phase", "play_phase", etc.).
             game_over: Boolean indicating if the game has ended.
             winner_id: The ID of the winning player, if game_over is True.
         """

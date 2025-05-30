@@ -245,60 +245,37 @@ class GameEngine:
         if game_state.game_over:
             return []
 
-        if self.mindbug_phase_active:
-            # If in Mindbug response phase, only Mindbug-related actions are valid for the opponent
-            played_card_id = game_state._pending_mindbug_card.id
-            if opponent.mindbugs:
-                valid_actions.append(UseMindbugAction(inactive_player.id, played_card_id))
-            valid_actions.append(PassMindbugAction(inactive_player.id))
+        if game_state.phase == "mindbug_phase":
+            # During the mindbug phase, the active player must choose whether to use a mindbug or not.
+            if active_player.mindbugs:
+                valid_actions.append(UseMindbugAction(active_player.id))
+            valid_actions.append(PassMindbugAction(active_player.id))
             return valid_actions
 
-        # Normal turn actions based on phase
-        if game_state.phase == "draw_phase":
-            # Player automatically draws. No action needed from player, engine handles this.
-            # Immediately transition to play phase.
-            # This method should probably not be called during auto-draw.
-            # For simplicity, if called, suggest to end turn or play.
-            valid_actions.append(EndTurnAction(active_player.id)) # Still an option
-            for card in active_player.hand:
-                valid_actions.append(PlayCardAction(active_player.id, card.id))
-
         elif game_state.phase == "play_phase":
-            # Can play a card or end turn
+            # During the play phase, the active player can play a card or attack with a card on the play area.
             for card in active_player.hand:
-                valid_actions.append(PlayCardAction(active_player.id, card.id))
-            valid_actions.append(EndTurnAction(active_player.id))
-
-        elif game_state.phase == "attack_phase":
-            # Can attack with an unexhausted card, or end turn
-            for card in game_state.battlefield[active_player.id]:
-                if not card.is_exhausted:
-                    # Can attack player directly (if no blockers are forced)
-                    valid_actions.append(AttackAction(active_player.id, card.id, inactive_player.id))
-                    # Or attack specific cards if Hunter allows, or if it's a direct target
-                    # (Mindbug doesn't generally allow targeting opponent's cards directly like this for attacks)
-            valid_actions.append(EndTurnAction(active_player.id))
+                valid_actions.append(PlayCardAction(active_player.id, card.uuid))
+            for card in active_player.play_area:
+                valid_actions.append(AttackAction(active_player.id, card.uuid))
 
         elif game_state.phase == "block_phase":
-            # Opponent is making a blocking decision
-            attacking_card = game_state._pending_attack_card
-            if attacking_card:
-                # Option to not block
-                valid_actions.append(BlockAction(inactive_player.id, attacking_card.id, None))
-                
-                # Options to block with valid cards
-                for blocker in game_state.battlefield[inactive_player.id]:
-                    if self.game_rules.is_valid_blocker(attacking_card, blocker):
-                        valid_actions.append(BlockAction(inactive_player.id, attacking_card.id, blocker.id))
+            # During the block phase, the active player is the opponent
+            valid_actions.append(BlockAction(active_player.id, None))  # Option to not block
+            attacking_card_uuid = game_state._pending_attack_card_uuid
+            if attacking_card_uuid:
+                attacking_card = self.game_rules.get_card_by_uuid(game_state, attacking_card_uuid)
+                for card in active_player.play_area:
+                    # Check if the card can block the pending attack
+                    if self.game_rules.is_valid_blocker(card, attacking_card,
+                                                        active_player.play_area, inactive_player.play_area):
+                        valid_actions.append(BlockAction(active_player.id, card.uuid))
             else:
                 # Should not happen in "block_phase"
-                print("Warning: block_phase entered without pending attack.")
+                raise ValueError("Block phase entered without a pending attack card.")
             
         elif game_state.phase == "end_turn_phase":
-            # Only option is to transition to next turn, which the engine does automatically
-            # or the player signals it with an EndTurnAction if multiple actions allowed.
-            valid_actions.append(EndTurnAction(active_player.id))
-
+            raise ValueError("Invalid game phase: end_turn_phase. This should not be directly queried for actions.")
 
         # General rule: a player must take an action. If they cannot, they lose.
         if not valid_actions and not game_state.game_over:
