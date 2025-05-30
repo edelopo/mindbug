@@ -1,34 +1,23 @@
+# src/agents/human_agent.py
 from src.agents.base_agent import BaseAgent
 from src.models.game_state import GameState
-from src.models.action import (
-    Action, PlayCardAction, AttackAction,
-    UseMindbugAction, PassMindbugAction, BlockAction
-)
-from uuid import UUID
+from src.models.action import Action
+from typing import List
+from src.utils.cli import MindbugCLI # Import the CLI
 
 class HumanAgent(BaseAgent):
-    def choose_action(self, game_state: GameState, possible_actions: list[Action]) -> Action:
-        active_player = game_state.get_active_player()
-        print(f"\n--- {active_player.id}'s Turn (Phase: {game_state.phase}) ---")
-        print(f"Your Hand: {[f'{card.name} (UUID: {str(card.uuid)[:4]}...)' for card in active_player.hand]}")
-        print(f"Your Play Area: {[f'{card.name} (P:{card.power}, Exhausted: {card.is_exhausted})' for card in active_player.play_area]}")
-        print(f"Your Life: {active_player.life_points}, Mindbugs: {active_player.mindbugs}")
+    def __init__(self, player_id: str):
+        super().__init__(player_id)
+        self.cli = MindbugCLI() # Initialize the CLI here
 
-        inactive_player = game_state.get_inactive_player()
-        print(f"Opponent's Play Area: {[f'{card.name} (P:{card.power})' for card in inactive_player.play_area]}")
-        print(f"Opponent's Life: {inactive_player.life_points}, Mindbugs: {inactive_player.mindbugs}")
-
-        print("\nPossible actions:")
-        for i, action in enumerate(possible_actions):
-            print(f"{i + 1}. {action}")
-
-        while True:
-            try:
-                choice = input("Enter the number of your chosen action: ")
-                action_index = int(choice) - 1
-                if 0 <= action_index < len(possible_actions):
-                    return possible_actions[action_index]
-                else:
-                    print("Invalid action number. Please try again.")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
+    def choose_action(self, game_state: GameState, possible_actions: List[Action]) -> Action:
+        """
+        Human agent chooses an action by interacting with the CLI.
+        """
+        # The CLI now handles displaying the full game state
+        self.cli.display_game_state(game_state)
+        
+        # The CLI now handles getting the action choice
+        chosen_action = self.cli.get_player_action(possible_actions)
+        
+        return chosen_action
