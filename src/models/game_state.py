@@ -1,6 +1,4 @@
-# src/models/game_state.py
 import random
-import copy
 from uuid import UUID
 from typing import Dict, List, Optional, TYPE_CHECKING # For type hints
 from src.models.player import Player
@@ -143,30 +141,6 @@ class GameState:
         # This will be more complex and usually handled by the game engine,
         # but the GameState can expose the underlying data.
         return self.game_over
-
-    # For AI, it's often useful to create a deep copy of the state
-    # before applying an action, especially if you're using a mutable state.
-    # If your GameEngine methods modify the state in place, you NEED this.
-    # If they return a *new* state, this isn't strictly necessary for every step,
-    # but still good for initial state exploration in AI.
-    # def copy(self):
-    #     """
-    #     Creates a deep copy of the current GameState.
-    #     Crucial for AI algorithms like MCTS that need to simulate many futures
-    #     without altering the original state.
-    #     """
-    #     # Deep copy all mutable containers
-    #     players_copy = {pid: copy.deepcopy(player) for pid, player in self.players.items()}
-
-    #     return GameState(
-    #         active_player_id=self.active_player_id,
-    #         inactive_player_id=self.inactive_player_id,
-    #         players=players_copy,
-    #         turn_count=self.turn_count,
-    #         phase=self.phase,
-    #         game_over=self.game_over,
-    #         winner_id=self.winner_id
-    #     )
 
     def __repr__(self):
         active_player = self.get_active_player()

@@ -2,6 +2,7 @@
 from src.models.game_state import GameState
 from src.models.action import Action
 from typing import List, Dict
+from src.core.game_rules import GameRules
 import os
 
 class MindbugCLI:
@@ -12,7 +13,7 @@ class MindbugCLI:
         active_player = game_state.get_active_player()
         inactive_player = game_state.get_inactive_player()
 
-        os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console for better readability
+        # os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console for better readability
 
         print("\n" + "="*40)
         print(f"       TURN {game_state.turn_count} - PHASE: {game_state.phase.upper()}")
@@ -26,9 +27,10 @@ class MindbugCLI:
         print(f"Cards left in deck: {len(active_player.deck)}")
         print(f"Play Area ({len(active_player.play_area)} cards):")
         if active_player.play_area:
-            for creature in active_player.play_area:
-                exhausted_status = "(Exhausted)" if creature.is_exhausted else ""
-                print(f"  - {creature.name} (Power: {creature.power}) {exhausted_status}")
+            for card in active_player.play_area:
+                exhausted_status = "(Exhausted)" if card.is_exhausted else ""
+                effective_power = GameRules.get_effective_power(game_state, card.uuid)
+                print(f"  - {card.name} (Power: {card.power}) {exhausted_status}")
         else:
             print("  (Empty)")
 
@@ -38,8 +40,9 @@ class MindbugCLI:
         print(f"Cards left in deck: {len(active_player.deck)}")
         print(f"Play Area ({len(inactive_player.play_area)} cards):")
         if inactive_player.play_area:
-            for creature in inactive_player.play_area:
-                print(f"  - {creature.name} (Power: {creature.power})")
+            for card in inactive_player.play_area:
+                exhausted_status = "(Exhausted)" if card.is_exhausted else ""
+                print(f"  - {card.name} (Power: {card.power}) {exhausted_status}")
         else:
             print("  (Empty)")
         print("="*40 + "\n")

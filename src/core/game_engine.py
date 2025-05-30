@@ -36,6 +36,8 @@ class GameEngine:
             return self._handle_play_card_action(new_state, action)
         elif isinstance(action, AttackAction):
             return self._handle_attack_action(new_state, action)
+        elif isinstance(action, BlockAction):
+            return self._handle_block_action(new_state, action)
         else:
             print(f"Unknown or invalid action type: {type(action)}")
             return new_state
@@ -210,6 +212,7 @@ class GameEngine:
             game_state = self.game_rules.lose_life(game_state, blocking_player.id)
 
         del game_state._pending_attack_card_uuid  # Clear pending attack state
+        game_state.switch_active_player()  # Switch back to attacking player to get the correct game state
         game_state = self.end_turn(game_state)  # End turn after block resolution
 
         return game_state

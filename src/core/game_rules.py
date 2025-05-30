@@ -6,38 +6,38 @@ from src.models.game_state import GameState
 from src.models.card import Card
 
 class GameRules:
+    # We begin with "static" variables that we want to access witout instantiating the class.
+    # Map card IDs to specific ability functions for "Play" effects
+    play_ability_handlers = {
+        "axolotl_healer": "_axolotl_healer_play_ability",
+        # Add more play abilities here
+    }
+    # Map card IDs to specific ability functions for "Attack" effects
+    attack_ability_handlers = {
+        "tusked_extorter": "_tusked_extorter_attack_ability",
+        # Add more attack abilities here
+    }
+    # Map card IDs to specific ability functions for "Defeated" effects
+    defeated_ability_handlers = {
+        # "some_card_id": self._some_card_defeated_ability,
+    }
+    # Map card IDs to specific ability functions for "Passive" effects
+    passive_ability_handlers = {
+        "shield_bugs": "_shield_bugs_passive_ability",
+    }
+    # Keyword handlers (e.g., for Tough, Frenzy, Poisonous, Sneaky, Hunter)
+    keyword_handlers = {
+        "Tough": "_handle_tough_keyword",
+        "Poisonous": "_handle_poisonous_keyword",
+        "Frenzy": "_handle_frenzy_keyword",
+        "Sneaky": "_handle_sneaky_keyword",
+        "Hunter": "_handle_hunter_keyword"
+    }
+
     def __init__(self, card_definitions: Dict[str, Card], deck_size: int = 10, hand_size: int = 5):
         self.card_definitions = card_definitions
         self.deck_size = deck_size
         self.hand_size = hand_size
-        # Map card IDs to specific ability functions for "Play" effects
-        # You'll expand this significantly as you add more cards
-        self.play_ability_handlers = {
-            "axolotl_healer": self._axolotl_healer_play_ability,
-            # Add more play abilities here
-        }
-        # Map card IDs to specific ability functions for "Attack" effects
-        self.attack_ability_handlers = {
-            "tusked_extorter": self._tusked_extorter_attack_ability,
-            # Add more attack abilities here
-        }
-        # Map card IDs to specific ability functions for "Defeated" effects
-        self.defeated_ability_handlers = {
-            # "some_card_id": self._some_card_defeated_ability,
-        }
-        # Map card IDs to specific ability functions for "Passive" effects
-        self.passive_ability_handlers = {
-            "shield_bugs": self._shield_bugs_passive_ability,
-        }
-        # Keyword handlers (e.g., for Tough, Frenzy, Poisonous, Sneaky, Hunter)
-        self.keyword_handlers = {
-            "Tough": self._handle_tough_keyword,
-            "Poisonous": self._handle_poisonous_keyword,
-            "Frenzy": self._handle_frenzy_keyword,
-            "Sneaky": self._handle_sneaky_keyword,
-            "Hunter": self._handle_hunter_keyword,
-        }
-
 
     # --- Core Game Logic Functions ---
 
@@ -65,8 +65,12 @@ class GameRules:
         
         if attacker.controller is None or blocker.controller is None:
             raise ValueError("Attacker or blocker has no controller. Cannot resolve combat.")
+        
+        effective_attacker_power = self.get_effective_power(game_state, attacker.uuid)
+        effective_blocker_power = self.get_effective_power(game_state, blocker.uuid)
 
-        print(f"Resolving combat: {attacker.name} (P={attacker.power}) vs {blocker.name} (P={blocker.power})")
+        print(f"Resolving combat: {attacker.name} (P={effective_attacker_power}) "
+              f"vs {blocker.name} (P={effective_blocker_power})")
 
         defeated_attacker = False
         defeated_blocker = False
@@ -82,8 +86,6 @@ class GameRules:
 
         # Effective power comparison if not already defeated by Poisonous
         if not defeated_attacker or not defeated_blocker:
-            effective_attacker_power = self.get_effective_power(game_state, attacker.uuid)
-            effective_blocker_power = self.get_effective_power(game_state, blocker.uuid)
             if effective_attacker_power > effective_blocker_power:
                 defeated_blocker = True
                 print(f"{attacker.name} defeats {blocker.name}.")
@@ -159,8 +161,9 @@ class GameRules:
             raise ValueError(f"Card with UUID {card_played_uuid} has no controller. Cannot activate play ability.")
         if card_played.ability_type == "play":
             print(f"Activating Play ability of {card_played.name} for {card_played.controller.id}")
-            handler = self.play_ability_handlers.get(card_played.id)
-            if handler:
+            handler_name = self.play_ability_handlers.get(card_played.id)
+            if handler_name:
+                handler = getattr(self, handler_name)
                 game_state = handler(copy.deepcopy(game_state), card_played_uuid)
         return game_state
 
@@ -171,8 +174,9 @@ class GameRules:
             raise ValueError(f"Attacking card with UUID {attacking_card_uuid} has no controller. Cannot activate attack ability.")
         if attacking_card.ability_type == "attack":
             print(f"Activating Attack ability for {attacking_card.name}")
-            handler = self.attack_ability_handlers.get(attacking_card.id)
-            if handler:
+            handler_name = self.attack_ability_handlers.get(attacking_card.id)
+            if handler_name:
+                handler = getattr(self, handler_name)
                 game_state = handler(copy.deepcopy(game_state), attacking_card_uuid)
         return game_state
 
@@ -183,8 +187,9 @@ class GameRules:
             raise ValueError(f"Defeated card with UUID {defeated_card_uuid} has no controller. Cannot activate defeated ability.")
         if defeated_card.ability_type == "defeated":
             print(f"Activating Defeated ability for {defeated_card.name}")
-            handler = self.defeated_ability_handlers.get(defeated_card.id)
-            if handler:
+            handler_name = self.defeated_ability_handlers.get(defeated_card.id)
+            if handler_name:
+                handler = getattr(self, handler_name)
                 game_state = handler(copy.deepcopy(game_state), defeated_card_uuid)
         return game_state
 
@@ -195,9 +200,10 @@ class GameRules:
 
     # -- Play Abilities --
 
-    def _axolotl_healer_play_ability(self, game_state: GameState, card_uuid: UUID) -> GameState:
+    @staticmethod
+    def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID) -> GameState:
         """Axolotl Healer's 'Play' effect: Gain 2 life points."""
-        card_played = self.get_card_by_uuid(game_state, card_uuid)
+        card_played = GameRules.get_card_by_uuid(game_state, card_uuid)
         player = card_played.controller
         if player is None:
             raise ValueError("Card played has no controller. Cannot resolve play ability.")
@@ -210,9 +216,10 @@ class GameRules:
     
     # -- Attack Abilities --
 
-    def _tusked_extorter_attack_ability(self, game_state: GameState, attacking_card_uuid: UUID) -> GameState:
+    @staticmethod
+    def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID) -> GameState:
         """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
-        attacking_card = self.get_card_by_uuid(game_state, attacking_card_uuid)
+        attacking_card = GameRules.get_card_by_uuid(game_state, attacking_card_uuid)
         if attacking_card.controller is None:
             raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
         
@@ -233,22 +240,25 @@ class GameRules:
     # -- Passive Abilities --
     # Some of these are handled at the relevant part of the game logic, such as is_valid_blocker or resolve_combat.
 
-    def _shield_bugs_passive_ability(self, game_state: GameState, shield_bugs_uuid: UUID, 
+    @staticmethod
+    def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID, 
                                      affected_card_uuid: UUID) -> int:
         """Shield Bugs' 'Passive' effect: Other allied creatures have +1 power."""
-        shield_bugs_card = self.get_card_by_uuid(game_state, shield_bugs_uuid)
+        shield_bugs_card = GameRules.get_card_by_uuid(game_state, shield_bugs_uuid)
         if shield_bugs_card.controller is None:
             raise ValueError("Shield Bugs card has no controller. Cannot resolve passive ability.")
-        affected_card = self.get_card_by_uuid(game_state, affected_card_uuid)
+        affected_card = GameRules.get_card_by_uuid(game_state, affected_card_uuid)
         if affected_card.controller is None:
             raise ValueError("Affected card has no controller. Cannot resolve passive ability.")
-        if affected_card.controller.id == shield_bugs_card.controller.id:
+        if (affected_card.controller.id == shield_bugs_card.controller.id
+            and affected_card.uuid != shield_bugs_uuid):
             return 1
         else:
             return 0
 
 
     # --- Keyword Handlers (e.g., during combat or blocking) ---
+
 
     def _handle_tough_keyword(self, card: Card):
         # This is handled directly in resolve_combat for defeat effect.
@@ -287,7 +297,8 @@ class GameRules:
         # Add other blocking rules if they exist (e.g., cards that cannot block)
         return True
     
-    def get_card_by_uuid(self, game_state: GameState, card_uuid: UUID) -> Card:
+    @staticmethod
+    def get_card_by_uuid(game_state: GameState, card_uuid: UUID) -> Card:
         """Returns a card by its UUID from the game state."""
         for player in [game_state.get_active_player(), game_state.get_inactive_player()]:
             for card in player.play_area + player.hand + player.discard_pile:
@@ -295,16 +306,18 @@ class GameRules:
                     return card
         else:
             raise ValueError(f"Card with UUID {card_uuid} not found in game state.")
-        
-    def get_effective_power(self, game_state: GameState, card_uuid: UUID) -> int:
+    
+    @staticmethod
+    def get_effective_power(game_state: GameState, card_uuid: UUID) -> int:
         """Returns the effective power of a card, considering any passive effects."""
-        card = self.get_card_by_uuid(game_state, card_uuid)
+        card = GameRules.get_card_by_uuid(game_state, card_uuid)
         effective_power = card.power
 
         for other_card in game_state.get_active_player().play_area + game_state.get_inactive_player().play_area:
             if other_card.ability_type == "passive":
-                handler = self.passive_ability_handlers.get(other_card.id)
-                if handler:
+                handler_name = GameRules.passive_ability_handlers.get(other_card.id)
+                if handler_name:
+                    handler = getattr(GameRules, handler_name)
                     effective_power += handler(game_state, other_card.uuid, card.uuid)
         
         return effective_power
