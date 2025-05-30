@@ -2,7 +2,7 @@
 from src.models.game_state import GameState
 from src.models.action import Action
 from typing import List, Dict
-from src.core.game_rules import GameRules
+import src.core.game_rules as GameRules
 import os
 
 class MindbugCLI:

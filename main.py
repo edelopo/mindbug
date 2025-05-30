@@ -10,9 +10,8 @@ def run_game():
     cards_json_path = os.path.join(current_dir, 'data', 'cards.json')
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
-    card_definitions_dict = load_definitions_from_json(filepath=cards_json_path)
 
-    game_engine = GameEngine(card_definitions=card_definitions_dict, deck_size=4, hand_size=2)
+    game_engine = GameEngine(deck_size=4, hand_size=2)
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"

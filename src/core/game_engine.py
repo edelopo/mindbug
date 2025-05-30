@@ -6,11 +6,12 @@ from src.models.action import (
     UseMindbugAction, PassMindbugAction, BlockAction
 )
 from src.models.card import Card
-from src.core.game_rules import GameRules
+import src.core.game_rules as GameRules
 
 class GameEngine:
-    def __init__(self, card_definitions: Dict[str, Card], deck_size: int = 10, hand_size: int = 5):
-        self.game_rules = GameRules(card_definitions, deck_size, hand_size)
+    def __init__(self, deck_size: int = 10, hand_size: int = 5):
+        self.deck_size = deck_size
+        self.hand_size = hand_size
 
     def apply_action(self, game_state: GameState, action: Action) -> GameState:
         """
@@ -41,6 +42,23 @@ class GameEngine:
         else:
             print(f"Unknown or invalid action type: {type(action)}")
             return new_state
+    
+    def lose_life(self, game_state: GameState, player_id: str, amount: int = 1) -> GameState:
+        """A player loses life."""
+        player_losing_life = game_state.get_player(player_id)
+        player_losing_life.life_points -= amount
+        print(f"{player_id} loses {amount} life points, now they have {player_losing_life.life_points} life points left.")
+
+        if player_losing_life.life_points <= 0:
+            # Player has no life points left, they lose the game
+            game_state.game_over = True
+            if player_id == game_state.active_player_id:
+                game_state.winner_id = game_state.inactive_player_id
+            else:
+                game_state.winner_id = game_state.active_player_id
+            print(f"{player_id} has no life points left! {game_state.winner_id} wins!")
+
+        return game_state
 
     # --- Action Handlers (private methods within GameEngine) ---
 
@@ -62,7 +80,7 @@ class GameEngine:
         print(f"{player.id} plays {card_to_play.name}.")
 
         # 2. Draw back to hand_size cards (Mindbug rule)
-        while len(player.hand) < self.game_rules.hand_size and player.deck:
+        while len(player.hand) < self.hand_size and player.deck:
             drawn_card = player.draw_card()
             print(f"{player.id} draws {drawn_card.name} to refill hand.")
         
@@ -105,19 +123,19 @@ class GameEngine:
                 # 2. Remove played card from original player's hand
                 player.play_area.remove(played_card)
                 # 3. Activate the card's play ability for the opponent
-                game_state = self.game_rules.activate_play_ability(game_state, played_card.uuid)
+                game_state = GameRules.activate_play_ability(game_state, played_card.uuid)
                 # Now we do NOT switch back to the original player, so that when the turn ends they go again.
                 
             else:
                 print(f"{opponent.id} tried to Mindbug but has no Mindbugs left.")
                 # Fall through to act as if they passed
                 game_state.switch_active_player() # Switch back to original player
-                game_state = self.game_rules.activate_play_ability(game_state, played_card.uuid)
+                game_state = GameRules.activate_play_ability(game_state, played_card.uuid)
 
         elif isinstance(action, PassMindbugAction):
             print(f"{opponent.id} passes on Mindbugging {played_card.name}.")
             game_state.switch_active_player() # Switch back to original player
-            game_state = self.game_rules.activate_play_ability(game_state, played_card.uuid)
+            game_state = GameRules.activate_play_ability(game_state, played_card.uuid)
 
         game_state._pending_mindbug_card_uuid = None # Clear pending Mindbug state
         game_state = self.end_turn(game_state) # End turn after Mindbug resolution
@@ -139,12 +157,12 @@ class GameEngine:
         print(f"{attacking_player.id}'s {attacking_card.name} attacks!")
 
         # Activate "Attack" abilities (e.g., Tusked Extorter)
-        game_state = self.game_rules.activate_attack_ability(game_state, attacking_card.uuid)
+        game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid)
 
         # Check if opponent has a blocker
         exist_valid_blockers = False
         for card in blocking_player.play_area:
-            if self.game_rules.is_valid_blocker(
+            if GameRules.is_valid_blocker(
                 blocking_card=card, attacking_card=attacking_card, 
                 blocking_player_play_area=blocking_player.play_area, attacking_player_play_area=attacking_player.play_area
             ):
@@ -154,7 +172,7 @@ class GameEngine:
         if not exist_valid_blockers:
             # No blockers available, opponent takes damage
             print(f"{blocking_player.id} has no valid blockers. {attacking_player.id} deals damage directly!")
-            game_state = self.game_rules.lose_life(game_state, blocking_player.id)
+            game_state = self.lose_life(game_state, blocking_player.id)
             game_state = self.end_turn(game_state)  # End turn after attack resolution
             return game_state
         else:
@@ -188,7 +206,7 @@ class GameEngine:
                 print(f"Error: Blocking card UUID '{action.blocking_card_uuid}' not found in {blocking_player.id}'s play area.")
                 return game_state
             
-            is_valid_blocker = self.game_rules.is_valid_blocker(
+            is_valid_blocker = GameRules.is_valid_blocker(
                 attacking_card=attacking_card, blocking_card=blocking_card,
                 blocking_player_play_area=blocking_player.play_area,
                 attacking_player_play_area=attacking_player.play_area
@@ -200,16 +218,16 @@ class GameEngine:
             print(f"{blocking_player.id}'s {blocking_card.name} blocks {attacking_card.name}.")
             
             # Resolve combat
-            game_state, defeated_cards_uuid = self.game_rules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid)
+            game_state, defeated_cards_uuid = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid)
 
             # Activate "Defeated" abilities
             # TODO: Implement phase to choose the order of defeated abilities if there are multiple
             for defeated_card_uuid in defeated_cards_uuid:
-                game_state = self.game_rules.activate_defeated_ability(game_state, defeated_card_uuid)
+                game_state = GameRules.activate_defeated_ability(game_state, defeated_card_uuid)
         else:
             # Opponent chose not to block
             print(f"{blocking_player.id} chooses not to block.")
-            game_state = self.game_rules.lose_life(game_state, blocking_player.id)
+            game_state = self.lose_life(game_state, blocking_player.id)
 
         del game_state._pending_attack_card_uuid  # Clear pending attack state
         game_state.switch_active_player()  # Switch back to attacking player to get the correct game state
@@ -248,7 +266,7 @@ class GameEngine:
             if active_player.mindbugs:
                 if game_state._pending_mindbug_card_uuid:
                     # If there is a pending Mindbug card, the player can choose to use a Mindbug on it.
-                    card_name = self.game_rules.get_card_by_uuid(game_state, game_state._pending_mindbug_card_uuid).name
+                    card_name = GameRules.get_card_by_uuid(game_state, game_state._pending_mindbug_card_uuid).name
                 else:
                     raise ValueError("Mindbug phase entered without a pending Mindbug card.")
                 valid_actions.append({'action': UseMindbugAction(active_player.id),
@@ -271,10 +289,10 @@ class GameEngine:
                                   'card_name': "None"})  # Option to not block
             attacking_card_uuid = game_state._pending_attack_card_uuid
             if attacking_card_uuid:
-                attacking_card = self.game_rules.get_card_by_uuid(game_state, attacking_card_uuid)
+                attacking_card = GameRules.get_card_by_uuid(game_state, attacking_card_uuid)
                 for card in active_player.play_area:
                     # Check if the card can block the pending attack
-                    if self.game_rules.is_valid_blocker(card, attacking_card,
+                    if GameRules.is_valid_blocker(card, attacking_card,
                                                         active_player.play_area, inactive_player.play_area):
                         valid_actions.append({'action': BlockAction(active_player.id, card.uuid),
                                               'card_name': card.name})
