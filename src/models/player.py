@@ -32,10 +32,7 @@ class Player:
     
     def draw_card(self) -> Card:
         """
-        Draw cards from the top of the deck.
-        
-        Args:
-            count: Number of cards to draw
+        Draw card from the top of the deck.
             
         Returns:
             List: Cards that were drawn
@@ -60,6 +57,7 @@ class Player:
         if card in self.hand:
             self.hand.remove(card)
             self.discard_pile.append(card)
+            self.draw_card()
             return True
         return False
     

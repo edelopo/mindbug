@@ -222,11 +222,6 @@ class GameEngine:
         print(f"Turn {game_state.turn_count} ended.\n")
         game_state.switch_active_player() # Switch active player
         game_state.turn_count += 1 # Increment turn count
-        print(f"Turn {game_state.turn_count}: {game_state.active_player_id} to play or attack.")
-        print("Current state of the game:")
-        for player_id, player in game_state.players.items():
-            print(f"{player_id}'s play area: {[c.name for c in player.play_area]}\n"
-                  f"{player.life_points} life points, {player.mindbugs} mindbugs.")
         game_state.phase = "play_phase"
 
         return game_state
@@ -248,7 +243,13 @@ class GameEngine:
         if game_state.phase == "mindbug_phase":
             # During the mindbug phase, the active player must choose whether to use a mindbug or not.
             if active_player.mindbugs:
-                valid_actions.append({'action': UseMindbugAction(active_player.id)})
+                if game_state._pending_mindbug_card_uuid:
+                    # If there is a pending Mindbug card, the player can choose to use a Mindbug on it.
+                    card_name = self.game_rules.get_card_by_uuid(game_state, game_state._pending_mindbug_card_uuid).name
+                else:
+                    raise ValueError("Mindbug phase entered without a pending Mindbug card.")
+                valid_actions.append({'action': UseMindbugAction(active_player.id),
+                                      'card_name': card_name})
             valid_actions.append({'action': PassMindbugAction(active_player.id)})
             return valid_actions
 
