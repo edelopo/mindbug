@@ -9,6 +9,15 @@
     "ability_text": "Play: Gain 2 life points."
   },
   {
+    "id": "bee_bear",
+    "name": "Bee Bear",
+    "amount": 1,
+    "base_power": 8,
+    "keywords": [],
+    "ability_type": "passive",
+    "ability_text": "Cannot be blocked by creatures with power 6 or less."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

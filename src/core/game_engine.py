@@ -163,8 +163,9 @@ class GameEngine:
         exist_valid_blockers = False
         for card in blocking_player.play_area:
             if GameRules.is_valid_blocker(
-                blocking_card=card, attacking_card=attacking_card, 
-                blocking_player_play_area=blocking_player.play_area, attacking_player_play_area=attacking_player.play_area
+                blocking_card_uuid=card.uuid, 
+                attacking_card_uuid=attacking_card.uuid, 
+                game_state=game_state,
             ):
                 exist_valid_blockers = True
                 break
@@ -207,9 +208,9 @@ class GameEngine:
                 return game_state
             
             is_valid_blocker = GameRules.is_valid_blocker(
-                attacking_card=attacking_card, blocking_card=blocking_card,
-                blocking_player_play_area=blocking_player.play_area,
-                attacking_player_play_area=attacking_player.play_area
+                attacking_card_uuid=attacking_card.uuid, 
+                blocking_card_uuid=blocking_card.uuid,
+                game_state=game_state,
             )
             if not is_valid_blocker:
                 print(f"Error: {attacking_card.name} is not a valid blocker.")
@@ -292,8 +293,11 @@ class GameEngine:
                 attacking_card = GameRules.get_card_by_uuid(game_state, attacking_card_uuid)
                 for card in active_player.play_area:
                     # Check if the card can block the pending attack
-                    if GameRules.is_valid_blocker(card, attacking_card,
-                                                        active_player.play_area, inactive_player.play_area):
+                    if GameRules.is_valid_blocker(
+                        blocking_card_uuid=card.uuid, 
+                        attacking_card_uuid=attacking_card.uuid, 
+                        game_state=game_state
+                    ):
                         valid_actions.append({'action': BlockAction(active_player.id, card.uuid),
                                               'card_name': card.name})
             else:

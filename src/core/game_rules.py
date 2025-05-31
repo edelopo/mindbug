@@ -325,14 +325,20 @@ keyword_handlers = {
 # --- Utility methods for rules ---
 # These might be used by GameEngine to determine valid actions or apply effects.
 
-def is_valid_blocker(blocking_card: Card, attacking_card: Card,
-                            blocking_player_play_area: List[Card], 
-                            attacking_player_play_area: List[Card]) -> bool:
+def is_valid_blocker(blocking_card_uuid: UUID, attacking_card_uuid: UUID,
+                     game_state: GameState) -> bool:
     """Checks if a blocker is valid."""
+    blocking_card = get_card_by_uuid(game_state, blocking_card_uuid)
+    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+
+    blocking_card_effective_power = get_effective_power(game_state, blocking_card.uuid)
 
     if "Sneaky" in attacking_card.keywords and "Sneaky" not in blocking_card.keywords:
         return False # Sneaky can only be blocked by Sneaky
-    # Add other blocking rules if they exist (e.g., cards that cannot block)
+    
+    # Bee Bear ability
+    if attacking_card.id == "bee_bear" and blocking_card_effective_power <= 6:
+        return False
     return True
 
 def get_card_by_uuid(game_state: GameState, card_uuid: UUID) -> Card:
