@@ -1,7 +1,7 @@
 import random
 import copy
 from uuid import UUID
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from src.models.game_state import GameState
 from src.models.card import Card
 
@@ -101,7 +101,7 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
 
     # --- Ability Handlers (called by GameEngine when appropriate) ---
 
-def activate_play_ability(game_state: GameState, card_played_uuid: UUID) -> GameState:
+def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents: Dict = {}) -> GameState:
     """Activates a card's 'Play' ability."""
     card_played = get_card_by_uuid(game_state, card_played_uuid)
     if card_played.controller is None:
@@ -110,10 +110,10 @@ def activate_play_ability(game_state: GameState, card_played_uuid: UUID) -> Game
         print(f"Activating Play ability of {card_played.name} for {card_played.controller.id}")
         handler = play_ability_handlers.get(card_played.id)
         if handler:
-            game_state = handler(copy.deepcopy(game_state), card_played_uuid)
+            game_state = handler(copy.deepcopy(game_state), card_played_uuid, agents)
     return game_state
 
-def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID) -> GameState:
+def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Activates a card's 'Attack' ability."""
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
     if attacking_card.controller is None:
@@ -122,10 +122,10 @@ def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID) ->
         print(f"Activating Attack ability for {attacking_card.name}")
         handler = attack_ability_handlers.get(attacking_card.id)
         if handler:
-            game_state = handler(copy.deepcopy(game_state), attacking_card_uuid)
+            game_state = handler(copy.deepcopy(game_state), attacking_card_uuid, agents)
     return game_state
 
-def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID) -> GameState:
+def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Activates a card's 'Defeated' ability."""
     defeated_card = get_card_by_uuid(game_state, defeated_card_uuid)
     if defeated_card.controller is None:
@@ -134,7 +134,7 @@ def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID) -
         print(f"Activating Defeated ability for {defeated_card.name}")
         handler = defeated_ability_handlers.get(defeated_card.id)
         if handler:
-            game_state = handler(copy.deepcopy(game_state), defeated_card_uuid)
+            game_state = handler(copy.deepcopy(game_state), defeated_card_uuid, agents)
     return game_state
 
 
@@ -144,7 +144,7 @@ def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID) -
 
 # -- Play Abilities --
 
-def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID) -> GameState:
+def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Axolotl Healer's 'Play' effect: Gain 2 life points."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     player = card_played.controller
@@ -157,7 +157,7 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID) -> Game
 
     return game_state
 
-def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID) -> GameState:
+def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
@@ -173,7 +173,7 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID) -> Gam
 
 # -- Attack Abilities --
 
-def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID) -> GameState:
+def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
     if attacking_card.controller is None:
@@ -193,11 +193,53 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
 
 # -- Defeated Abilities --
 
+def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict = {}) -> GameState:
+    """Harpy Mother's 'Defeated' effect: Take control of up to two creatures with power 5 or less."""
+    defeated_card = get_card_by_uuid(game_state, defeated_card_uuid)
+    if defeated_card.controller is None:
+        raise ValueError("Defeated card has no controller. Cannot resolve defeated ability.")
+    
+    player = defeated_card.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    valid_targets = []
+    for card in opponent.play_area:
+        effective_power = get_effective_power(game_state, card.uuid)
+        if effective_power <= 5:
+            valid_targets.append(card)
+
+    if not valid_targets:
+        print(f"No valid creatures with power 5 or less to take control of.")
+        return game_state
+    # Create a choice request
+    from src.models.action import CardChoiceRequest
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=valid_targets,
+        min_choices=1,
+        max_choices=min(2, len(valid_targets)),
+        purpose="steal",
+        prompt="Choose up to two creatures with power 5 or less to steal."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_cards = agent.choose_cards(game_state, choice_request)
+
+    # Steal the chosen cards
+    for card in chosen_cards:
+        opponent.play_area.remove(card)
+        player.play_area.append(card)
+        card.controller = player
+        print(f"{player.id} steals {card.name} from {opponent.id}.")
+
+    return game_state
+
 # -- Passive Abilities --
 # Some of these are handled at the relevant part of the game logic, such as is_valid_blocker or resolve_combat.
 
 def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID, 
-                                    affected_card_uuid: UUID) -> int:
+                                    affected_card_uuid: UUID, agents: Dict = {}) -> int:
     """Shield Bugs' 'Passive' effect: Other allied creatures have +1 power."""
     shield_bugs_card = get_card_by_uuid(game_state, shield_bugs_uuid)
     if shield_bugs_card.controller is None:

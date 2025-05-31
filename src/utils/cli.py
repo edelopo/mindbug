@@ -1,6 +1,7 @@
 # CLI = Command Line Interface
 from src.models.game_state import GameState
-from src.models.action import Action
+from src.models.action import Action, CardChoiceRequest
+from src.models.card import Card
 from typing import List, Dict
 import src.core.game_rules as GameRules
 import os
@@ -73,3 +74,61 @@ class MindbugCLI:
                     print("Invalid action number. Please try again.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
+
+    # def get_card_choice(self, choice_request: CardChoiceRequest) -> List[Card]:
+    #     print(choice_request.prompt)
+    #     for i, card in enumerate(choice_request.options):
+    #         print(f"{i+1}: {card.name} (Power: {card.power})")
+    #     indices = input(f"Enter the numbers of your choices (comma separated, up to {choice_request.max_choices}): ")
+    #     chosen_indices = [int(idx.strip())-1 for idx in indices.split(",")]
+    #     for idx in chosen_indices:
+    #         if idx < 0 or idx >= len(choice_request.options):
+    #             raise ValueError(f"Invalid choice index: {idx + 1}. Please choose from the available options.")
+    #     if len(chosen_indices) > choice_request.max_choices:
+    #         raise ValueError(f"Too many choices. You can only choose up to {choice_request.max_choices} cards.")
+    #     chosen = [choice_request.options[i] for i in chosen_indices]
+    #     return chosen
+
+    def get_card_choice(self, choice_request: CardChoiceRequest) -> List[Card]:
+        """
+        Prompts the player to select cards from the given options.
+        """
+        print("\n" + "="*40)
+        print(f"  CARD SELECTION")
+        print("="*40)
+        print(f"\n{choice_request.prompt}")
+        
+        # Display card options in a formatted way
+        print("\nAvailable cards:")
+        for i, card in enumerate(choice_request.options):
+            print(f"  {i+1}. {card.name:<15} (Power: {card.power})")
+        
+        # Selection instructions
+        print(f"\nSelect up to {choice_request.max_choices} card{'' if choice_request.max_choices == 1 else 's'} to {choice_request.purpose}.")
+        
+        # Get user input with error handling
+        while True:
+            try:
+                indices = input("\nEnter your choice(s) (comma separated): ")
+                chosen_indices = [int(idx.strip())-1 for idx in indices.split(",") if idx.strip()]
+                
+                # Validate choices
+                if not chosen_indices:
+                    print("❌ No valid choices made. Please select at least one option.")
+                    continue
+                    
+                if len(chosen_indices) > choice_request.max_choices:
+                    print(f"❌ Too many selections. Please choose at most {choice_request.max_choices}.")
+                    continue
+                
+                invalid_indices = [i for i in chosen_indices if i < 0 or i >= len(choice_request.options)]
+                if invalid_indices:
+                    print(f"❌ Invalid selection(s): {[i+1 for i in invalid_indices]}. Try again.")
+                    continue
+                
+                # Return valid selections
+                chosen = [choice_request.options[i] for i in chosen_indices]
+                return chosen
+                
+            except ValueError:
+                print("❌ Please enter valid numbers separated by commas.")

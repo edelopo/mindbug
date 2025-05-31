@@ -1,7 +1,7 @@
-# src/agents/human_agent.py
 from src.agents.base_agent import BaseAgent
 from src.models.game_state import GameState
-from src.models.action import Action
+from src.models.action import Action, CardChoiceRequest
+from src.models.card import Card
 from typing import List, Dict
 from src.utils.cli import MindbugCLI # Import the CLI
 
@@ -21,3 +21,11 @@ class HumanAgent(BaseAgent):
         chosen_action = self.cli.get_player_action(possible_actions)
         
         return chosen_action
+    
+    def choose_cards(self, game_state: GameState, choice_request: CardChoiceRequest) -> List[Card]:
+        """
+        Human agent chooses cards from a list of options for a specific purpose.
+        """
+        chosen_cards = self.cli.get_card_choice(choice_request)
+
+        return chosen_cards

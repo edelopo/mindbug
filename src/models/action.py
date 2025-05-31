@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
+from src.models.card import Card
 
 class Action:
     """Base class for all actions a player can take."""
@@ -47,4 +48,19 @@ class PassMindbugAction(Action):
     def __repr__(self):
         return f"PassMindbugAction(Player: {self.player_id})"
 
-# Define other potential actions as needed (e.g., ActivateAbilityAction)
+class CardChoiceRequest:
+    def __init__(
+        self,
+        player_id: str,
+        options: List[Card],
+        min_choices: int,
+        max_choices: int,
+        purpose: str,  # e.g., "steal", "destroy", "play"
+        prompt: Optional[str] = None
+    ):
+        self.player_id = player_id
+        self.options = options
+        self.min_choices = min_choices
+        self.max_choices = max_choices
+        self.purpose = purpose
+        self.prompt = prompt or f"Choose {min_choices}-{max_choices} card(s) to {purpose}."
