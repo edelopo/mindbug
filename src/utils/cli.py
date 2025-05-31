@@ -17,62 +17,62 @@ class MindbugCLI:
         # os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console for better readability
 
         # Game header with turn info
-        print("\n" + "╔" + "═"*50 + "╗")
-        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PHASE: ' + game_state.phase.upper():^50}║")
-        print("╚" + "═"*50 + "╝")
+        print("\n" + "╔" + "═"*70 + "╗")
+        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PHASE: ' + game_state.phase.upper():^70}║")
+        print("╚" + "═"*70 + "╝")
 
         # Active player indicator
         print(f"\n▶ {active_player.id}'s TURN")
 
         # Active player's board
-        print(f"\n┌{'─'*48}┐")
-        print(f"│ {active_player.id}'s Board{' '*(48 - len(active_player.id) - 9)}│")
-        print(f"├{'─'*48}┤")
-        print(f"│ Life: {active_player.life_points:2d}  │  Mindbugs: {active_player.mindbugs:2d}  │  Deck: {len(active_player.deck):2d} cards   │")
-        print(f"├{'─'*48}┤")
+        print(f"\n┌{'─'*68}┐")
+        print(f"│ {active_player.id}'s Board{' '*(68 - len(active_player.id) - 9)}│")
+        print(f"├{'─'*68}┤")
+        print(f"│{' ':>5}Life: {active_player.life_points:2d}{' ':>5}│{' ':>5}Mindbugs: {active_player.mindbugs:2d}{' ':>5}│{' ':>6}Deck: {len(active_player.deck):2d} cards{' ':>6}│")
+        print(f"├{'─'*68}┤")
         
         # Hand display
-        print(f"│ Hand ({len(active_player.hand)} cards):{' '*(48 - len(f'Hand ({len(active_player.hand)} cards):') - 1)}│")
+        print(f"│ Hand ({len(active_player.hand)} cards):{' '*(68 - len(f'Hand ({len(active_player.hand)} cards):') - 1)}│")
         if active_player.hand:
             for i, card in enumerate(active_player.hand):
-                card_str = f"│  {i+1}. {card.name:<20} (Power: {card.power})"
-                print(f"{card_str}{' '*(49 - len(card_str))}│")
+                card_str = f"│  {i+1}. {card.name:<25} (Power: {card.power})"
+                print(f"{card_str}{' '*(69 - len(card_str))}│")
         else:
-            print(f"│  (Empty){' '*39}│")
+            print(f"│  (Empty){' '*59}│")
         
         # Play area display
-        print(f"├{'─'*48}┤")
-        print(f"│ Play Area ({len(active_player.play_area)} cards):{' '*(48 - len(f'Play Area ({len(active_player.play_area)} cards):') - 1)}│")
+        print(f"├{'─'*68}┤")
+        print(f"│ Play Area ({len(active_player.play_area)} cards):{' '*(68 - len(f'Play Area ({len(active_player.play_area)} cards):') - 1)}│")
         if active_player.play_area:
             for i, card in enumerate(active_player.play_area):
                 exhausted = "⚠ EXHAUSTED" if card.is_exhausted else ""
                 eff_power = GameRules.get_effective_power(game_state, card.uuid)
-                card_str = f"│  {i+1}. {card.name:<15} (Power: {eff_power:2d}) {exhausted}"
-                print(f"{card_str}{' '*(49 - len(card_str))}│")
+                card_str = f"│  {i+1}. {card.name:<25} (Power: {eff_power:2d}) {exhausted}"
+                print(f"{card_str}{' '*(69 - len(card_str))}│")
         else:
-            print(f"│  (Empty){' '*39}│")
-        print(f"└{'─'*48}┘")
+            print(f"│  (Empty){' '*59}│")
+        print(f"└{'─'*68}┘")
 
         # Inactive player's board
-        print(f"\n┌{'─'*48}┐")
-        print(f"│ {inactive_player.id}'s Board{' '*(48 - len(inactive_player.id) - 9)}│")
-        print(f"├{'─'*48}┤")
-        print(f"│ Life: {inactive_player.life_points:2d}  │  Mindbugs: {inactive_player.mindbugs:2d}  │  Deck: {len(inactive_player.deck):2d} cards   │")
-        print(f"├{'─'*48}┤")
-        print(f"│ Hand: {len(inactive_player.hand)} cards{' '*(48 - len(f'Hand: {len(inactive_player.hand)} cards') - 1)}│")
+        print(f"\n┌{'─'*68}┐")
+        print(f"│ {inactive_player.id}'s Board{' '*(68 - len(inactive_player.id) - 9)}│")
+        print(f"├{'─'*68}┤")
+        print(f"│{' ':>5}Life: {inactive_player.life_points:2d}{' ':>5}│{' ':>5}Mindbugs: {inactive_player.mindbugs:2d}{' ':>5}│{' ':>6}Deck: {len(inactive_player.deck):2d} cards{' ':>6}│")
+        print(f"├{'─'*68}┤")
+        print(f"│ Hand: {len(inactive_player.hand)} cards{' '*(68 - len(f'Hand: {len(inactive_player.hand)} cards') - 1)}│")
         
         # Play area display
-        print(f"├{'─'*48}┤")
-        print(f"│ Play Area ({len(inactive_player.play_area)} cards):{' '*(48 - len(f'Play Area ({len(inactive_player.play_area)} cards):') - 1)}│")
+        print(f"├{'─'*68}┤")
+        print(f"│ Play Area ({len(inactive_player.play_area)} cards):{' '*(68 - len(f'Play Area ({len(inactive_player.play_area)} cards):') - 1)}│")
         if inactive_player.play_area:
             for i, card in enumerate(inactive_player.play_area):
                 exhausted = "⚠ EXHAUSTED" if card.is_exhausted else ""
                 eff_power = GameRules.get_effective_power(game_state, card.uuid)
-                card_str = f"│  {i+1}. {card.name:<15} (Power: {eff_power:2d}) {exhausted}"
-                print(f"{card_str}{' '*(49 - len(card_str))}│")
+                card_str = f"│  {i+1}. {card.name:<25} (Power: {eff_power:2d}) {exhausted}"
+                print(f"{card_str}{' '*(69 - len(card_str))}│")
         else:
-            print(f"│  (Empty){' '*39}│")
-        print(f"└{'─'*48}┘\n")
+            print(f"│  (Empty){' '*59}│")
+        print(f"└{'─'*68}┘\n")
 
     def get_player_action(self, possible_actions: List[Dict[str, Action | str]]) -> Action:
         """
@@ -105,23 +105,23 @@ class MindbugCLI:
         Prompts the player to select cards from the given options.
         """
         # Card selection header with decorative box
-        print("\n" + "╔" + "═"*50 + "╗")
-        print(f"║{'CARD SELECTION':^50}║")
-        print("╚" + "═"*50 + "╝")
+        print("\n" + "╔" + "═"*70 + "╗")
+        print(f"║{'CARD SELECTION':^70}║")
+        print("╚" + "═"*70 + "╝")
         
         # Display the prompt
         print(f"\n{choice_request.prompt}")
         
         # Display card options in a formatted box
-        print(f"\n┌{'─'*48}┐")
-        print(f"│ Available Options:{' '*(48 - len('Available Options:') - 1)}│")
-        print(f"├{'─'*48}┤")
+        print(f"\n┌{'─'*68}┐")
+        print(f"│ Available Options:{' '*(68 - len('Available Options:') - 1)}│")
+        print(f"├{'─'*68}┤")
         for i, card in enumerate(choice_request.options):
             exhausted = "⚠ EXHAUSTED" if card.is_exhausted else ""
             eff_power = GameRules.get_effective_power(game_state, card.uuid)
-            card_str = f"│  {i+1}. {card.name:<15} (Power: {eff_power:2d}) {exhausted}"
-            print(f"{card_str}{' '*(49 - len(card_str))}│")
-        print(f"└{'─'*48}┘")
+            card_str = f"│  {i+1}. {card.name:<25} (Power: {eff_power:2d}) {exhausted}"
+            print(f"{card_str}{' '*(69 - len(card_str))}│")
+        print(f"└{'─'*68}┘")
         
         # Selection instructions
         print(f"\nSelect up to {choice_request.max_choices} card{'' if choice_request.max_choices == 1 else 's'} to {choice_request.purpose}.")

@@ -15,8 +15,8 @@ def run_game():
     player2_id = "Human Player 2"
     agents = {player1_id: HumanAgent(player1_id), player2_id: HumanAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
-                                         deck_size=4, hand_size=2)
-    game_engine = GameEngine(deck_size=4, hand_size=2, agents=agents)
+                                         deck_size=5, hand_size=2)
+    game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
 
     print("--- Starting Mindbug Game ---")
     
