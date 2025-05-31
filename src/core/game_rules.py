@@ -4,6 +4,7 @@ from uuid import UUID
 from typing import List, Tuple, Dict
 from src.models.game_state import GameState
 from src.models.card import Card
+from src.models.action import CardChoiceRequest
 
 # --- Core Game Logic Functions ---
 
@@ -181,13 +182,25 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
     
     opponent = game_state.get_opponent_of(attacking_card.controller.id)
     
-    if opponent.hand:
-        # AI/Player decision: which card to discard? For now, random.
-        card_to_discard = random.choice(opponent.hand)
-        opponent.discard_card(card_to_discard)
-        print(f"{opponent.id} discards {card_to_discard.name} due to Tusked Extorter.")
-    else:
+    if not opponent.hand:
         print(f"{opponent.id}'s hand is empty, cannot discard.")
+        return game_state
+
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=opponent.id,
+        options=opponent.hand,
+        min_choices=1,
+        max_choices=1,
+        purpose="discard",
+        prompt="Choose a card to DISCARD."
+    )
+
+    # Ask the agent to choose
+    agent = agents[opponent.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+    opponent.discard_card(chosen_card)
+    print(f"{opponent.id} discards {chosen_card.name} due to Tusked Extorter.")
 
     return game_state
 
@@ -211,15 +224,15 @@ def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UU
     if not valid_targets:
         print(f"No valid creatures with power 5 or less to take control of.")
         return game_state
+    
     # Create a choice request
-    from src.models.action import CardChoiceRequest
     choice_request = CardChoiceRequest(
         player_id=player.id,
         options=valid_targets,
         min_choices=1,
         max_choices=min(2, len(valid_targets)),
         purpose="steal",
-        prompt="Choose up to two creatures with power 5 or less to steal."
+        prompt="Choose up to two creatures with power 5 or less to STEAL."
     )
 
     # Ask the agent to choose
