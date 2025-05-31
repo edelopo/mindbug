@@ -30,7 +30,7 @@ def run_game():
 
         valid_actions = game_engine.get_valid_actions(game_state)
         
-        if not valid_actions and not game_state.game_over:
+        if not valid_actions:
             print(f"{active_player_id} has no valid actions and loses!")
             game_state.game_over = True
             game_state.winner_id = game_state.inactive_player_id
@@ -40,15 +40,8 @@ def run_game():
 
         game_state = game_engine.apply_action(game_state, chosen_action)
 
-        if game_state.game_over:
-            print(f"\n--- Game Over! ---")
-            if game_state.winner_id:
-                print(f"Winner: {game_state.winner_id}")
-            else:
-                print("Game ended in a draw or unusual state.")
-            break
-
     print("\n--- Game Finished ---")
+    print(f"Winner: {game_state.winner_id}")
 
 
 if __name__ == "__main__":
