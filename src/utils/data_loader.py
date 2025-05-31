@@ -26,9 +26,9 @@ def load_cards_from_json(filepath=None) -> List[Card]:
 
     cards = []
     for card_data in card_data_list:
-        card = Card.from_dict(card_data)
         for _ in range(card_data.get('amount', 1)):
-            cards.append(copy.deepcopy(card))  # Use deepcopy to ensure unique instances
+            # We need to create a new instance so that each card has a different UUID
+            cards.append(copy.deepcopy(Card.from_dict(card_data)))
     return cards
 
 def load_definitions_from_json(filepath=None) -> Dict[str, Card]:
