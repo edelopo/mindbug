@@ -82,7 +82,6 @@ class GameEngine:
         # 2. Draw back to hand_size cards (Mindbug rule)
         while len(player.hand) < self.hand_size and player.deck:
             drawn_card = player.draw_card()
-            print(f"{player.id} draws {drawn_card.name} to refill hand.")
         
         # 3. Opponent gets a chance to Mindbug (Crucial Mindbug mechanic!)
         game_state._pending_mindbug_card_uuid = card_to_play.uuid # Store the card being played for Mindbug decision

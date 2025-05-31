@@ -7,6 +7,28 @@ from src.models.card import Card
 
 # --- Core Game Logic Functions ---
 
+def defeat(game_state: GameState, card_uuid: UUID) -> Tuple[GameState, bool]:
+    """
+    Defeats a card by moving it from play area to discard pile.
+    It includes Tough keyword handling.
+    Returns the updated GameState.
+    """
+    card = get_card_by_uuid(game_state, card_uuid)
+    if card.controller is None:
+        raise ValueError("Card has no controller. Cannot defeat.")   
+
+    defeated = True
+    # Apply Tough
+    if "Tough" in card.keywords and not card.is_exhausted:
+        print(f"{card.name} is Tough. It becomes exhausted instead of defeated.")
+        card.is_exhausted = True
+        defeated = False
+    else:
+        # Remove defeated card from play area and move to controller's discard pile
+        card.controller.discard_pile.append(card)
+        card.controller.play_area.remove(card)
+    return (game_state, defeated)
+
 def resolve_combat(game_state: GameState, attacker_uuid: UUID, 
                     blocker_uuid: UUID) -> Tuple[GameState, List[UUID]]:
     """
@@ -63,35 +85,12 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
             defeated_blocker = True
             print(f"{attacker.name} and {blocker.name} defeat each other.")
 
-    # Apply Tough for attacker
-    if defeated_attacker and "Tough" in attacker.keywords:
-        if not attacker.is_exhausted:
-            attacker.is_exhausted = True
-            print(f"{attacker.name} is Tough. It becomes exhausted instead of defeated.")
-            defeated_attacker = False # Prevent actual defeat
-        else:
-            print(f"{attacker.name} is Tough but already exhausted. It is defeated.")
-            # It remains in defeated_attackers, will be removed from battlefield
-
-    # Apply Tough for blocker
-    if defeated_blocker and "Tough" in blocker.keywords:
-        if not blocker.is_exhausted:
-            blocker.is_exhausted = True
-            print(f"{blocker.name} is Tough. It becomes exhausted instead of defeated.")
-            defeated_blocker = False # Prevent actual defeat
-        else:
-            print(f"{blocker.name} is Tough but already exhausted. It is defeated.")
-            # It remains in defeated_blockers, will be removed from battlefield
-
-    # Remove defeated cards from battlefield and move to controller's discard pile
     if defeated_attacker:
-        attacker.controller.discard_pile.append(attacker)
-        attacker.controller.play_area.remove(attacker)
-
+        game_state, defeated_attacker = defeat(game_state, attacker.uuid)
     if defeated_blocker:
-        blocker.controller.discard_pile.append(blocker)
-        blocker.controller.play_area.remove(blocker)
+        game_state, defeated_blocker = defeat(game_state, blocker.uuid)
     
+    # We have to do this twice because the defeat function may change the bool value of defeated
     defeated_cards_uuid = []
     if defeated_attacker:
         defeated_cards_uuid.append(attacker.uuid)
@@ -156,6 +155,20 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID) -> Game
     player.life_points += 2
     print(f"{player.id} gains 2 life points. New life: {player.life_points}")
 
+    return game_state
+
+def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID) -> GameState:
+    """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    opponent = game_state.get_opponent_of(card_played.controller.id)
+    for card in opponent.play_area:
+        effective_power = get_effective_power(game_state, card.uuid)
+        if effective_power <= 4:
+            print(f"{card.name} (P={effective_power}) is defeated by Kangasaurus Rex.")
+            game_state, defeated = defeat(game_state, card.uuid)
     return game_state
 
 # -- Attack Abilities --
@@ -230,7 +243,7 @@ def _handle_hunter_keyword(card: Card):
 # Map card IDs to specific ability functions for "Play" effects
 play_ability_handlers = {
     "axolotl_healer": _axolotl_healer_play_ability,
-    # Add more play abilities here
+    "kangasaurus_rex": _kangasaurus_rex_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {

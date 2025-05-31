@@ -30,7 +30,7 @@ class Player:
         self.life_points: int = life_points
         self.mindbugs: int = mindbugs
     
-    def draw_card(self) -> Card:
+    def draw_card(self) -> Card | None:
         """
         Draw card from the top of the deck.
             
@@ -40,9 +40,11 @@ class Player:
         if self.deck:
             card = self.deck.pop(0)  # Take from the top of the deck
             self.hand.append(card)
+            return card
         else:
-            raise ValueError("No cards left in the deck to draw.")
-        return card
+            print("No cards left in the deck to draw.")
+            return None
+        
     
     def discard_card(self, card: Card) -> bool:
         """
