@@ -10,12 +10,14 @@ def run_game():
     cards_json_path = os.path.join(current_dir, 'data', 'cards.json')
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
+    # Make a list of forced cards for testing purposes
+    forced_cards = [card for card in all_cards_list if card.id == 'bee_bear']
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
     agents = {player1_id: HumanAgent(player1_id), player2_id: HumanAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
-                                         deck_size=5, hand_size=2)
+                                         deck_size=5, hand_size=2, forced_cards=forced_cards)
     game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
 
     print("--- Starting Mindbug Game ---")

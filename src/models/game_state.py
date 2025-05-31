@@ -41,7 +41,9 @@ class GameState:
                       player2_id: str,
                       starting_deck: List[Card], # All starting cards from data/cards.json
                       deck_size: int = 10, # Standard deck size
-                      hand_size: int = 5): # Standard hand size
+                      hand_size: int = 5,
+                      forced_cards: List[Card] = []
+                      ): # Standard hand size
         """
         Sets up the initial state for a new Mindbug game.
 
@@ -55,9 +57,12 @@ class GameState:
         Returns:
             A new GameState object representing the beginning of the game.
         """
+        # Create a list of cards that are not in forced_cards
+        other_cards = [card for card in starting_deck if card not in forced_cards]
 
-        # Shuffle the commond deck of cards
-        random.shuffle(starting_deck)
+        # Shuffle the common deck of cards
+        random.shuffle(other_cards)
+        starting_deck = forced_cards + other_cards
 
         # Distribute creature cards to decks
         if len(starting_deck) < deck_size * 2:
