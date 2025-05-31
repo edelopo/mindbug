@@ -99,7 +99,7 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
     return game_state, defeated_cards_uuid
 
 
-    # --- Ability Handlers (called by GameEngine when appropriate) ---
+# --- Ability Handlers (called by GameEngine when appropriate) ---
 
 def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents: Dict = {}) -> GameState:
     """Activates a card's 'Play' ability."""
@@ -294,7 +294,7 @@ attack_ability_handlers = {
 }
 # Map card IDs to specific ability functions for "Defeated" effects
 defeated_ability_handlers = {
-    # "some_card_id": self._some_card_defeated_ability,
+    "harpy_mother": _harpy_mother_defeated_ability,
 }
 # Map card IDs to specific ability functions for "Passive" effects
 passive_ability_handlers = {

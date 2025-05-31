@@ -26,6 +26,6 @@ class HumanAgent(BaseAgent):
         """
         Human agent chooses cards from a list of options for a specific purpose.
         """
-        chosen_cards = self.cli.get_card_choice(choice_request)
+        chosen_cards = self.cli.get_card_choice(game_state, choice_request)
 
         return chosen_cards

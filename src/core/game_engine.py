@@ -9,9 +9,10 @@ from src.models.card import Card
 import src.core.game_rules as GameRules
 
 class GameEngine:
-    def __init__(self, deck_size: int = 10, hand_size: int = 5):
+    def __init__(self, deck_size: int = 10, hand_size: int = 5, agents: Dict = {}):
         self.deck_size = deck_size
         self.hand_size = hand_size
+        self.agents = agents
 
     def apply_action(self, game_state: GameState, action: Action) -> GameState:
         """
@@ -122,19 +123,19 @@ class GameEngine:
                 # 2. Remove played card from original player's hand
                 player.play_area.remove(played_card)
                 # 3. Activate the card's play ability for the opponent
-                game_state = GameRules.activate_play_ability(game_state, played_card.uuid)
+                game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
                 # Now we do NOT switch back to the original player, so that when the turn ends they go again.
                 
             else:
                 print(f"{opponent.id} tried to Mindbug but has no Mindbugs left.")
                 # Fall through to act as if they passed
                 game_state.switch_active_player() # Switch back to original player
-                game_state = GameRules.activate_play_ability(game_state, played_card.uuid)
+                game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
 
         elif isinstance(action, PassMindbugAction):
             print(f"{opponent.id} passes on Mindbugging {played_card.name}.")
             game_state.switch_active_player() # Switch back to original player
-            game_state = GameRules.activate_play_ability(game_state, played_card.uuid)
+            game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
 
         game_state._pending_mindbug_card_uuid = None # Clear pending Mindbug state
         game_state = self.end_turn(game_state) # End turn after Mindbug resolution
@@ -156,7 +157,7 @@ class GameEngine:
         print(f"{attacking_player.id}'s {attacking_card.name} attacks!")
 
         # Activate "Attack" abilities (e.g., Tusked Extorter)
-        game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid)
+        game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid, self.agents)
 
         # Check if opponent has a blocker
         exist_valid_blockers = False
@@ -222,7 +223,7 @@ class GameEngine:
             # Activate "Defeated" abilities
             # TODO: Implement phase to choose the order of defeated abilities if there are multiple
             for defeated_card_uuid in defeated_cards_uuid:
-                game_state = GameRules.activate_defeated_ability(game_state, defeated_card_uuid)
+                game_state = GameRules.activate_defeated_ability(game_state, defeated_card_uuid, self.agents)
         else:
             # Opponent chose not to block
             print(f"{blocking_player.id} chooses not to block.")

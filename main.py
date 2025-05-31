@@ -11,16 +11,12 @@ def run_game():
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
 
-    game_engine = GameEngine(deck_size=4, hand_size=2)
-
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
+    agents = {player1_id: HumanAgent(player1_id), player2_id: HumanAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
                                          deck_size=4, hand_size=2)
-
-    human_agent1 = HumanAgent(player1_id)
-    human_agent2 = HumanAgent(player2_id)
-    agents = {player1_id: human_agent1, player2_id: human_agent2}
+    game_engine = GameEngine(deck_size=4, hand_size=2, agents=agents)
 
     print("--- Starting Mindbug Game ---")
     
