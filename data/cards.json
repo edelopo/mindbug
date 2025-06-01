@@ -18,6 +18,15 @@
     "ability_text": "Cannot be blocked by creatures with power 6 or less."
   },
   {
+    "id": "brain_fly",
+    "name": "Brain FLy",
+    "amount": 1,
+    "base_power": 4,
+    "keywords": [],
+    "ability_type": "play",
+    "ability_text": "Play: Take control of a creature with power 6 or more."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

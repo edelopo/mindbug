@@ -158,6 +158,47 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents:
 
     return game_state
 
+def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
+    """Brain Fly's 'Play' effect: Take control of a creature with power 6 or more."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    valid_targets = []
+    for card in opponent.play_area:
+        effective_power = get_effective_power(game_state, card.uuid)
+        if effective_power >= 6:
+            valid_targets.append(card)
+
+    if not valid_targets:
+        print(f"No valid creatures with power 6 or more to take control of.")
+        return game_state
+    
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=valid_targets,
+        min_choices=1,
+        max_choices=1,
+        purpose="steal",
+        prompt="Choose a creature with power 6 or more to STEAL."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+    # Steal the chosen card
+    opponent.play_area.remove(chosen_card)
+    player.play_area.append(chosen_card)
+    chosen_card.controller = player
+    print(f"{player.id} steals {chosen_card.name} from {opponent.id}.")
+
+    return game_state
+
 def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
@@ -298,6 +339,7 @@ def _handle_hunter_keyword(card: Card):
 # Map card IDs to specific ability functions for "Play" effects
 play_ability_handlers = {
     "axolotl_healer": _axolotl_healer_play_ability,
+    "brain_fly": _brain_fly_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects

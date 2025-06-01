@@ -11,7 +11,7 @@ def run_game():
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
-    forced_cards = [card for card in all_cards_list if card.id == 'bee_bear']
+    forced_cards = [card for card in all_cards_list if card.id == 'brain_fly']
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
