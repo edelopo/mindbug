@@ -54,6 +54,15 @@
     "ability_text": "The opponent cannot activate play effects."
   },
   {
+    "id": "elephantopus",
+    "name": "Elephantopus",
+    "amount": 1,
+    "base_power": 7,
+    "keywords": ["Tough"],
+    "ability_type": "passive",
+    "ability_text": "The opponent cannot block with creatures with power 4 or less."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

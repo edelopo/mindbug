@@ -443,6 +443,9 @@ def is_valid_blocker(blocking_card_uuid: UUID, attacking_card_uuid: UUID,
     """Checks if a blocker is valid."""
     blocking_card = get_card_by_uuid(game_state, blocking_card_uuid)
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+    attacking_player = attacking_card.controller
+    if attacking_player is None:
+        raise ValueError("Attacking card has no controller. Cannot resolve blocking.")
 
     blocking_card_effective_power = get_effective_power(game_state, blocking_card.uuid)
 
@@ -452,6 +455,12 @@ def is_valid_blocker(blocking_card_uuid: UUID, attacking_card_uuid: UUID,
     # Bee Bear ability
     if attacking_card.id == "bee_bear" and blocking_card_effective_power <= 6:
         return False
+    
+    # Elephantopus ability
+    attacking_player_card_ids = [card.id for card in attacking_player.play_area]
+    if "elephantopus" in attacking_player_card_ids and blocking_card_effective_power <= 4:
+        return False
+    
     return True
 
 def get_card_by_uuid(game_state: GameState, card_uuid: UUID) -> Card:
