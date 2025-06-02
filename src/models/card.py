@@ -57,7 +57,7 @@ class Card:
         Returns:
             str: A formatted string with card information
         """
-        return f"Card(ID: {self.id}, Name: '{self.name}', Power: {self.power}, Keywords: {self.keywords}, Abilities: {self.ability_text})"
+        return f"Card(ID: {self.id}, UUID: {self.uuid}, Controller: {self.controller.id if self.controller else 'None'}"
     
     def __str__(self) -> str:
         """

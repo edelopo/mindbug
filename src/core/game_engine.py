@@ -145,6 +145,8 @@ class GameEngine:
         attacking_player = game_state.get_active_player()
         blocking_player = game_state.get_inactive_player()
         attacking_card = GameRules.get_card_by_uuid(game_state, action.attacking_card_uuid)
+        if attacking_card not in attacking_player.play_area:
+            raise ValueError(f"Attacking card {attacking_card.name} not found in {attacking_player.id}'s play area.")
 
         print(f"{attacking_player.id}'s {attacking_card.name} attacks!")
 
@@ -218,6 +220,8 @@ class GameEngine:
             game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid, self.agents)
 
         # Handle "Frenzy" keyword
+        attacking_player = game_state.get_player(attacking_player.id) # Refresh player state after combat resolution
+        attacking_card = GameRules.get_card_by_uuid(game_state, action.attacking_card_uuid)
         if ("Frenzy" in attacking_card.keywords 
             and not game_state._frenzy_active # Ensure Frenzy has not already been activated
             and attacking_card in attacking_player.play_area # Ensure the card has not been defeated

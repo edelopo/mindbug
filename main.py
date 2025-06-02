@@ -7,7 +7,7 @@ from src.agents.random_agent import RandomAgent, ZeroAgent
 from typing import Dict, List
 from src.models.card import Card
 from src.utils.data_loader import load_cards_from_json
-import os, sys
+import os, sys, traceback
 import multiprocessing as mp
 from itertools import repeat
 
@@ -104,18 +104,21 @@ def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> GameState:
     cards_json_path = os.path.join(current_dir, 'data', 'cards.json')
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
-    # forced_cards_1 = [card for card in all_cards_list if (card.id == 'harpy_mother' or 
-    #                                                     card.id == 'compost_dragon')]
-    # forced_cards_2 = [card for card in all_cards_list if (card.id == 'axolotl_healer')]
+    forced_cards_1 = [card for card in all_cards_list if (card.id == 'explosive_toad'
+                                                        #   or card.id == 'elephantopus'
+                                                          )]
+    forced_cards_2 = [card for card in all_cards_list if (card.id == 'elephantopus'
+                                                          or card.id == 'chameleon_sniper'
+                                                          )]
 
     player1_id = "Zero Agent"
     player2_id = "Random Agent"
     agents: Dict[str, BaseAgent] = {player1_id: ZeroAgent(player1_id), player2_id: RandomAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
-                                         deck_size, hand_size, 
-                                        #  forced_cards_1=forced_cards_1,
-                                        #  forced_cards_2=forced_cards_2
-                                         )
+                                        deck_size, hand_size, 
+                                         forced_cards_1=forced_cards_1,
+                                         forced_cards_2=forced_cards_2
+                                        )
     game_engine = GameEngine(deck_size, hand_size, agents=agents)
     
     while not game_state.game_over:
@@ -152,8 +155,17 @@ if __name__ == "__main__":
     hand_size = 2
     args_list = [(deck_size, hand_size) for _ in range(num_games)]
 
-    with mp.Pool() as pool:
-        results = pool.starmap(run_aivai_game, args_list)
+    # Run the games in parallel using multiprocessing
+    # with mp.Pool() as pool:
+    #     results = pool.starmap(run_aivai_game, args_list)
+
+    # Run the games sequentially for debugging
+    results = [run_aivai_game(deck_size, hand_size) for _ in range(num_games)]
+
+    # Re-enable prints
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
+    print(f"--- Completed {num_games} AI vs AI games ---")
     
     # Count wins for each player
     winners = [game_state.winner_id for game_state in results]
