@@ -159,7 +159,7 @@ class GameEngine:
                 player_id=attacking_player.id,
                 options=blocking_player.play_area,
                 min_choices=0,
-                max_choices=1,
+                max_choices=min(1, len(blocking_player.play_area)),
                 purpose="hunt",
                 prompt="Choose an enemy creature that will block the attack."
             )

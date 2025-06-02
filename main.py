@@ -3,10 +3,13 @@ from src.core.game_engine import GameEngine
 from src.models.game_state import GameState
 from src.agents.base_agent import BaseAgent
 from src.agents.human_agent import HumanAgent
-from src.agents.random_agent import RandomAgent
-from typing import Dict
-from src.utils.data_loader import load_cards_from_json, load_definitions_from_json
-import os
+from src.agents.random_agent import RandomAgent, ZeroAgent
+from typing import Dict, List
+from src.models.card import Card
+from src.utils.data_loader import load_cards_from_json
+import os, sys
+import multiprocessing as mp
+from itertools import repeat
 
 def run_pvp_game():
     current_dir = os.path.dirname(__file__)
@@ -89,9 +92,63 @@ def run_pvai_game():
     print("\n--- Game Finished ---")
     print(f"Winner: {game_state.winner_id}")
 
-def run_ai_game():
-    pass
+def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> str:
+    # Suppress prints for AI vs AI games
+    sys.stdout = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w')
+
+    current_dir = os.path.dirname(__file__)
+    cards_json_path = os.path.join(current_dir, 'data', 'cards.json')
+    all_cards_list = load_cards_from_json(filepath=cards_json_path)
+    # Make a list of forced cards for testing purposes
+    # forced_cards_1 = [card for card in all_cards_list if (card.id == 'harpy_mother' or 
+    #                                                     card.id == 'compost_dragon')]
+    # forced_cards_2 = [card for card in all_cards_list if (card.id == 'axolotl_healer')]
+
+    player1_id = "Zero Agent"
+    player2_id = "Random Agent"
+    agents: Dict[str, BaseAgent] = {player1_id: ZeroAgent(player1_id), player2_id: RandomAgent(player2_id)}
+    game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
+                                         deck_size, hand_size, 
+                                        #  forced_cards_1=forced_cards_1,
+                                        #  forced_cards_2=forced_cards_2
+                                         )
+    game_engine = GameEngine(deck_size, hand_size, agents=agents)
+    
+    while not game_state.game_over:
+        active_player_id = game_state.active_player_id
+        active_agent = agents[active_player_id]
+
+        valid_actions = game_engine.get_valid_actions(game_state)
+        
+        if not valid_actions:
+            # print(f"{active_player_id} has no valid actions and loses!")
+            game_state.game_over = True
+            game_state.winner_id = game_state.inactive_player_id
+            break
+
+        chosen_action = active_agent.choose_action(game_state, valid_actions)
+        game_state = game_engine.apply_action(game_state, chosen_action)
+
+    # print("\n--- Game Finished ---")
+    # print(f"Winner: {game_state.winner_id}")
+    if not game_state.winner_id:
+        raise ValueError("Game ended without a winner.")
+    return game_state.winner_id
 
 
 if __name__ == "__main__":
-    run_pvai_game()
+    num_games = 1000
+    deck_size = 5
+    hand_size = 2
+    args_list = [(deck_size, hand_size) for _ in range(num_games)]
+
+    with mp.Pool() as pool:
+        results = pool.starmap(run_aivai_game, args_list)
+    
+    # Count wins for each player
+    player1_wins = results.count("Zero Agent")
+    player2_wins = results.count("Random Agent")
+
+    print(f"Zero Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
+    print(f"Random Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")
