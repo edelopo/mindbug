@@ -90,6 +90,15 @@
     "ability_text": "Play: Draw your entire discard pile."
   },
   {
+    "id": "goblin_werewolf",
+    "name": "Goblin Werewolf",
+    "amount": 2,
+    "base_power": 2,
+    "keywords": ["Hunter"],
+    "ability_type": "passive",
+    "ability_text": "Has +6 power while it is your turn."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

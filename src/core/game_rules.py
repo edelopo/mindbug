@@ -451,6 +451,20 @@ def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UU
 # -- Passive Abilities --
 # Some of these are handled at the relevant part of the game logic, such as is_valid_blocker or resolve_combat.
 
+def _goblin_werewolf_passive_ability(game_state: GameState, goblin_werewolf_uuid: UUID,
+                                    affected_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> int:
+    """Goblin Werewolf's 'Passive' effect: Has +6 power while it is your turn."""
+    goblin_werewolf_controller = get_card_by_uuid(game_state, goblin_werewolf_uuid).controller
+    if goblin_werewolf_controller:
+        if (game_state.active_player_id == goblin_werewolf_controller.id
+            and goblin_werewolf_uuid == affected_card_uuid):
+            # Only apply the bonus if it's the controller's turn
+            return 6
+        else:
+            return 0
+    else:
+        raise ValueError("Goblin Werewolf card has no controller. Cannot resolve passive ability.")
+
 def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID, 
                                     affected_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> int:
     """Shield Bugs' 'Passive' effect: Other allied creatures have +1 power."""
@@ -490,6 +504,7 @@ defeated_ability_handlers = {
 }
 # Map card IDs to specific ability functions for "Passive" effects
 passive_ability_handlers = {
+    "goblin_werewolf": _goblin_werewolf_passive_ability,
     "shield_bugs": _shield_bugs_passive_ability,
 }
 

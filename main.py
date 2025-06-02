@@ -18,7 +18,7 @@ def run_pvp_game():
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
     forced_cards_1 = [card for card in all_cards_list if (
-        card.id == 'giraffodile'
+        card.id == 'goblin_werewolf'
         #   or card.id == 'elephantopus'
     )]
     forced_cards_2 = [card for card in all_cards_list if (
