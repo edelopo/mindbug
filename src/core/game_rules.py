@@ -84,36 +84,31 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
     print(f"Resolving combat: {attacker.name} (P={effective_attacker_power}) "
             f"vs {blocker.name} (P={effective_blocker_power})")
 
-    is_defeated_attacker = False
-    is_defeated_blocker = False
+    defeated_cards = []
 
     # Check for Poisonous keyword first
     if "Poisonous" in attacker.keywords:
         print(f"{attacker.name} is Poisonous. {blocker.name} is defeated.")
-        is_defeated_blocker = True
+        defeated_cards.append(blocker)
         
     if "Poisonous" in blocker.keywords:
         print(f"{blocker.name} is Poisonous. {attacker.name} is defeated.")
-        is_defeated_attacker = True
+        defeated_cards.append(attacker)
 
-    # Effective power comparison if not already defeated by Poisonous
-    if not is_defeated_attacker or not is_defeated_blocker:
-        if effective_attacker_power > effective_blocker_power:
-            is_defeated_blocker = True
-            print(f"{attacker.name} defeats {blocker.name}.")
-        elif effective_blocker_power > effective_attacker_power:
-            is_defeated_attacker = True
-            print(f"{blocker.name} defeats {attacker.name}.")
-        else: # Equal power
-            is_defeated_attacker = True
-            is_defeated_blocker = True
-            print(f"{attacker.name} and {blocker.name} defeat each other.")
+    # Effective power comparison
+    if effective_attacker_power > effective_blocker_power:
+        print(f"{attacker.name} defeats {blocker.name}.")
+        defeated_cards.append(blocker)
+    elif effective_blocker_power > effective_attacker_power:
+        print(f"{blocker.name} defeats {attacker.name}.")
+        defeated_cards.append(attacker)
+    else: # Equal power
+        print(f"{attacker.name} and {blocker.name} defeat each other.")
+        defeated_cards.append(attacker)
+        defeated_cards.append(blocker)
 
-    # TODO: Implement Choice of the order of defeated abilities if there are multiple
-    if is_defeated_attacker:
-        game_state = defeat(game_state, attacker.uuid, agents)
-    if is_defeated_blocker:
-        game_state = defeat(game_state, blocker.uuid, agents)
+    defeated_cards = list(set(defeated_cards))  # Remove duplicates
+    game_state = defeat(game_state, defeated_cards, agents) # This handles Choice of order of defeated abilities
     
     return game_state
 
