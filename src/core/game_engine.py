@@ -214,11 +214,7 @@ class GameEngine:
         else:
             print(f"{blocking_card.name} and {attacking_card.name} face each other.")
             # Resolve combat
-            game_state, defeated_cards_uuid = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid)
-            # Activate "Defeated" abilities
-            # TODO: Implement phase to choose the order of defeated abilities if there are multiple
-            for defeated_card_uuid in defeated_cards_uuid:
-                game_state = GameRules.activate_defeated_ability(game_state, defeated_card_uuid, self.agents)
+            game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid)
     
         game_state = self.end_turn(game_state)
         return game_state

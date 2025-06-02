@@ -72,18 +72,18 @@ class Player:
         """
         self.hand.append(card)
     
-    def lose_life(self, amount: int = 1) -> int:
-        """
-        Player loses life points.
+    # def lose_life(self, amount: int = 1) -> int:
+    #     """
+    #     Player loses life points.
         
-        Args:
-            amount: Amount of life to lose
+    #     Args:
+    #         amount: Amount of life to lose
             
-        Returns:
-            int: Current life points after loss
-        """
-        self.life_points = max(0, self.life_points - amount)
-        return self.life_points
+    #     Returns:
+    #         int: Current life points after loss
+    #     """
+    #     self.life_points = max(0, self.life_points - amount)
+    #     return self.life_points
     
     def gain_life(self, amount: int = 1) -> int:
         """

@@ -8,10 +8,10 @@ from src.models.action import CardChoiceRequest
 
 # --- Core Game Logic Functions ---
 
-def defeat(game_state: GameState, card_uuid: UUID) -> Tuple[GameState, bool]:
+def defeat(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> Tuple[GameState, bool]:
     """
     Defeats a card by moving it from play area to discard pile.
-    It includes Tough keyword handling.
+    It includes Tough keyword handling and activation of Defeated abilities.
     Returns the updated GameState.
     """
     card = get_card_by_uuid(game_state, card_uuid)
@@ -28,13 +28,14 @@ def defeat(game_state: GameState, card_uuid: UUID) -> Tuple[GameState, bool]:
         # Remove defeated card from play area and move to controller's discard pile
         card.controller.discard_pile.append(card)
         card.controller.play_area.remove(card)
+        activate_defeated_ability(game_state, card.uuid, agents)
     return (game_state, defeated)
 
 def resolve_combat(game_state: GameState, attacker_uuid: UUID, 
-                    blocker_uuid: UUID) -> Tuple[GameState, List[UUID]]:
+                    blocker_uuid: UUID) -> GameState:
     """
     Resolves a combat between two cards.
-    Returns the updated GameState and a list of defeated card UUIDs.
+    Returns the updated GameState.
     """
     attacker = get_card_by_uuid(game_state, attacker_uuid)
     blocker = get_card_by_uuid(game_state, blocker_uuid)
@@ -47,43 +48,38 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
     print(f"Resolving combat: {attacker.name} (P={effective_attacker_power}) "
             f"vs {blocker.name} (P={effective_blocker_power})")
 
-    defeated_attacker = False
-    defeated_blocker = False
+    is_defeated_attacker = False
+    is_defeated_blocker = False
 
     # Check for Poisonous keyword first
     if "Poisonous" in attacker.keywords:
         print(f"{attacker.name} is Poisonous. {blocker.name} is defeated.")
-        defeated_blocker = True
+        is_defeated_blocker = True
         
     if "Poisonous" in blocker.keywords:
         print(f"{blocker.name} is Poisonous. {attacker.name} is defeated.")
-        defeated_attacker = True
+        is_defeated_attacker = True
 
     # Effective power comparison if not already defeated by Poisonous
-    if not defeated_attacker or not defeated_blocker:
+    if not is_defeated_attacker or not is_defeated_blocker:
         if effective_attacker_power > effective_blocker_power:
-            defeated_blocker = True
+            is_defeated_blocker = True
             print(f"{attacker.name} defeats {blocker.name}.")
         elif effective_blocker_power > effective_attacker_power:
-            defeated_attacker = True
+            is_defeated_attacker = True
             print(f"{blocker.name} defeats {attacker.name}.")
         else: # Equal power
-            defeated_attacker = True
-            defeated_blocker = True
+            is_defeated_attacker = True
+            is_defeated_blocker = True
             print(f"{attacker.name} and {blocker.name} defeat each other.")
 
-    if defeated_attacker:
-        game_state, defeated_attacker = defeat(game_state, attacker.uuid)
-    if defeated_blocker:
-        game_state, defeated_blocker = defeat(game_state, blocker.uuid)
+    # TODO: Implement Choice of the order of defeated abilities if there are multiple
+    if is_defeated_attacker:
+        game_state, is_defeated_attacker = defeat(game_state, attacker.uuid)
+    if is_defeated_blocker:
+        game_state, is_defeated_blocker = defeat(game_state, blocker.uuid)
     
-    # We have to do this twice because the defeat function may change the bool value of defeated
-    defeated_cards_uuid = []
-    if defeated_attacker:
-        defeated_cards_uuid.append(attacker.uuid)
-    if defeated_blocker:
-        defeated_cards_uuid.append(blocker.uuid)
-    return game_state, defeated_cards_uuid
+    return game_state
 
 
 # --- Ability Handlers (called by GameEngine when appropriate) ---
@@ -227,7 +223,7 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
         raise ValueError("Card played has no controller. Cannot resolve play ability.")
     
     opponent = game_state.get_opponent_of(card_played.controller.id)
-    for card in opponent.play_area:
+    for card in opponent.play_area[:]: # We need to slice the list to avoid modifying it while iterating
         effective_power = get_effective_power(game_state, card.uuid)
         if effective_power <= 4:
             print(f"{card.name} (P={effective_power}) is defeated by Kangasaurus Rex.")

@@ -28,7 +28,7 @@ class MindbugCLI:
         print(f"\n┌{'─'*68}┐")
         print(f"│ {active_player.id}'s Board{' '*(68 - len(active_player.id) - 9)}│")
         print(f"├{'─'*68}┤")
-        print(f"│{' ':>5}Life: {active_player.life_points:2d}{' ':>5}│{' ':>5}Mindbugs: {active_player.mindbugs:2d}{' ':>5}│{' ':>6}Deck: {len(active_player.deck):2d} cards{' ':>6}│")
+        print(f"│{' ':>4}Life: {active_player.life_points:2d}{' ':>3}│{' ':>3}Mindbugs: {active_player.mindbugs:2d}{' ':>3}│{' ':>3}Deck: {len(active_player.deck):2d}{' ':>3}│{' ':>3}Discard: {len(active_player.discard_pile):2d}{' ':>4}│")
         print(f"├{'─'*68}┤")
         
         # Hand display
@@ -57,7 +57,7 @@ class MindbugCLI:
         print(f"\n┌{'─'*68}┐")
         print(f"│ {inactive_player.id}'s Board{' '*(68 - len(inactive_player.id) - 9)}│")
         print(f"├{'─'*68}┤")
-        print(f"│{' ':>5}Life: {inactive_player.life_points:2d}{' ':>5}│{' ':>5}Mindbugs: {inactive_player.mindbugs:2d}{' ':>5}│{' ':>6}Deck: {len(inactive_player.deck):2d} cards{' ':>6}│")
+        print(f"│{' ':>4}Life: {inactive_player.life_points:2d}{' ':>3}│{' ':>3}Mindbugs: {inactive_player.mindbugs:2d}{' ':>3}│{' ':>3}Deck: {len(inactive_player.deck):2d}{' ':>3}│{' ':>3}Discard: {len(inactive_player.discard_pile):2d}{' ':>4}│")
         print(f"├{'─'*68}┤")
         print(f"│ Hand: {len(inactive_player.hand)} cards{' '*(68 - len(f'Hand: {len(inactive_player.hand)} cards') - 1)}│")
         

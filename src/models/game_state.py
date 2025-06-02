@@ -42,7 +42,8 @@ class GameState:
                       starting_deck: List[Card], # All starting cards from data/cards.json
                       deck_size: int = 10, # Standard deck size
                       hand_size: int = 5,
-                      forced_cards: List[Card] = []
+                      forced_cards_1: List[Card] = [],
+                      forced_cards_2: List[Card] = []
                       ): # Standard hand size
         """
         Sets up the initial state for a new Mindbug game.
@@ -58,18 +59,17 @@ class GameState:
             A new GameState object representing the beginning of the game.
         """
         # Create a list of cards that are not in forced_cards
-        other_cards = [card for card in starting_deck if card not in forced_cards]
+        other_cards = [card for card in starting_deck if (card not in forced_cards_1 and card not in forced_cards_2)]
 
         # Shuffle the common deck of cards
         random.shuffle(other_cards)
-        starting_deck = forced_cards + other_cards
 
         # Distribute creature cards to decks
         if len(starting_deck) < deck_size * 2:
             raise ValueError(f"Not enough creature cards to form decks. Need at least {deck_size * 2}, but found {len(starting_deck)}.")
 
-        player1_deck_list = starting_deck[0:deck_size]
-        player2_deck_list = starting_deck[deck_size:deck_size * 2]
+        player1_deck_list = forced_cards_1 + other_cards[0:deck_size-len(forced_cards_1)]
+        player2_deck_list = forced_cards_2 + other_cards[deck_size-len(forced_cards_1):2*deck_size-len(forced_cards_2)]
 
         # Create Player objects
         player1 = Player(
