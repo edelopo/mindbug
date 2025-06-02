@@ -253,6 +253,38 @@ def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents:
 
     return game_state
 
+def _ferret_bomber_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Ferret Bomber's 'Play' effect: The opponent discards two cards."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    opponent = game_state.get_opponent_of(card_played.controller.id)
+
+    if not opponent.hand:
+        print(f"{opponent.id} has no cards in hand, cannot discard.")
+        return game_state
+
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=opponent.id,
+        options=opponent.hand,
+        min_choices=min(2, len(opponent.hand)),
+        max_choices=min(2, len(opponent.hand)),
+        purpose="discard",
+        prompt="Choose two cards to DISCARD."
+    )
+
+    # Ask the agent to choose
+    agent = agents[opponent.id]
+    chosen_cards = agent.choose_cards(game_state, choice_request)
+
+    for card in chosen_cards:
+        opponent.discard_card(card)
+        print(f"{opponent.id} discards {card.name} due to Ferret Bomber.")
+
+    return game_state
+
 def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
@@ -421,6 +453,7 @@ play_ability_handlers = {
     "axolotl_healer": _axolotl_healer_play_ability,
     "brain_fly": _brain_fly_play_ability,
     "compost_dragon": _compost_dragon_play_ability,
+    "ferret_bomber": _ferret_bomber_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects

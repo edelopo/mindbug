@@ -124,7 +124,7 @@ class MindbugCLI:
         print(f"└{'─'*68}┘")
         
         # Selection instructions
-        print(f"\nSelect up to {choice_request.max_choices} card{'' if choice_request.max_choices == 1 else 's'} to {choice_request.purpose}.")
+        # print(f"\nSelect up to {choice_request.max_choices} card{'' if choice_request.max_choices == 1 else 's'} to {choice_request.purpose}.")
         
         # Get user input with error handling
         while True:
