@@ -11,17 +11,18 @@ def run_game():
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
-    forced_cards_1 = [card for card in all_cards_list if (card.id == 'chameleon_sniper' or 
-                                                        card.id == 'compost_dragon')]
-    forced_cards_2 = [card for card in all_cards_list if (card.id == 'kangasaurus_rex')]
+    # forced_cards_1 = [card for card in all_cards_list if (card.id == 'chameleon_sniper' or 
+    #                                                     card.id == 'compost_dragon')]
+    # forced_cards_2 = [card for card in all_cards_list if (card.id == 'kangasaurus_rex')]
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
     agents = {player1_id: HumanAgent(player1_id), player2_id: HumanAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
                                          deck_size=5, hand_size=2, 
-                                         forced_cards_1=forced_cards_1,
-                                         forced_cards_2=forced_cards_2)
+                                        #  forced_cards_1=forced_cards_1,
+                                        #  forced_cards_2=forced_cards_2
+                                         )
     game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
 
     print("--- Starting Mindbug Game ---")

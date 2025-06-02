@@ -214,7 +214,7 @@ class GameEngine:
         else:
             print(f"{blocking_card.name} and {attacking_card.name} face each other.")
             # Resolve combat
-            game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid)
+            game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid, self.agents)
     
         game_state = self.end_turn(game_state)
         return game_state

@@ -5,34 +5,70 @@ from typing import List, Tuple, Dict
 from src.models.game_state import GameState
 from src.models.card import Card
 from src.models.action import CardChoiceRequest
+from src.agents.base_agent import BaseAgent
 
 # --- Core Game Logic Functions ---
 
-def defeat(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> Tuple[GameState, bool]:
+def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[str, BaseAgent] = {}) -> GameState:
     """
-    Defeats a card by moving it from play area to discard pile.
+    Defeats a card or list of cards by moving it from play area to discard pile.
     It includes Tough keyword handling and activation of Defeated abilities.
     Returns the updated GameState.
     """
-    card = get_card_by_uuid(game_state, card_uuid)
-    if card.controller is None:
-        raise ValueError("Card has no controller. Cannot defeat.")   
+    if isinstance(card_uuids, UUID):
+        card = get_card_by_uuid(game_state, card_uuids)
+        if card.controller is None:
+            raise ValueError("Card has no controller. Cannot defeat.")   
 
-    defeated = True
-    # Apply Tough
-    if "Tough" in card.keywords and not card.is_exhausted:
-        print(f"{card.name} is Tough. It becomes exhausted instead of defeated.")
-        card.is_exhausted = True
-        defeated = False
-    else:
-        # Remove defeated card from play area and move to controller's discard pile
-        card.controller.discard_pile.append(card)
-        card.controller.play_area.remove(card)
-        activate_defeated_ability(game_state, card.uuid, agents)
-    return (game_state, defeated)
+        # Apply Tough
+        if "Tough" in card.keywords and not card.is_exhausted:
+            print(f"{card.name} is Tough. It becomes exhausted instead of defeated.")
+            card.is_exhausted = True
+        else:
+            # Remove defeated card from play area and move to controller's discard pile
+            card.controller.discard_pile.append(card)
+            card.controller.play_area.remove(card)
+            activate_defeated_ability(game_state, card.uuid, agents)
+
+    elif isinstance(card_uuids, list):
+        defeated_cards = []
+        for card_uuid in card_uuids:
+            card = get_card_by_uuid(game_state, card_uuid)
+            if card.controller is None:
+                raise ValueError("Card has no controller. Cannot defeat.")
+            
+            # Apply Tough
+            if "Tough" in card.keywords and not card.is_exhausted:
+                print(f"{card.name} is Tough. It becomes exhausted instead of defeated.")
+                card.is_exhausted = True
+            else:
+                # Remove defeated card from play area and move to controller's discard pile
+                card.controller.discard_pile.append(card)
+                card.controller.play_area.remove(card)
+                defeated_cards.append(card)
+        
+        # Ask the active player to choose the order of defeated abilities
+        if defeated_cards:
+            defeated_cards_with_defeated_abilities = [
+                card for card in defeated_cards if card.ability_type == "defeated"
+            ]
+            if len(defeated_cards_with_defeated_abilities) > 1:
+                choice_request = CardChoiceRequest(
+                    player_id=game_state.active_player_id,
+                    options=defeated_cards_with_defeated_abilities,
+                    min_choices=len(defeated_cards_with_defeated_abilities),
+                    max_choices=len(defeated_cards_with_defeated_abilities),
+                    purpose="defeat_order",
+                    prompt="Choose the order of defeated abilities to activate."
+                )
+                agent = agents[game_state.active_player_id]
+                defeated_cards_with_defeated_abilities = agent.choose_cards(game_state, choice_request)
+            for card in defeated_cards_with_defeated_abilities:
+                activate_defeated_ability(game_state, card.uuid, agents)
+    return game_state
 
 def resolve_combat(game_state: GameState, attacker_uuid: UUID, 
-                    blocker_uuid: UUID) -> GameState:
+                    blocker_uuid: UUID, agents: Dict = {}) -> GameState:
     """
     Resolves a combat between two cards.
     Returns the updated GameState.
@@ -75,9 +111,9 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
 
     # TODO: Implement Choice of the order of defeated abilities if there are multiple
     if is_defeated_attacker:
-        game_state, is_defeated_attacker = defeat(game_state, attacker.uuid)
+        game_state = defeat(game_state, attacker.uuid, agents)
     if is_defeated_blocker:
-        game_state, is_defeated_blocker = defeat(game_state, blocker.uuid)
+        game_state = defeat(game_state, blocker.uuid, agents)
     
     return game_state
 
@@ -227,7 +263,7 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
         effective_power = get_effective_power(game_state, card.uuid)
         if effective_power <= 4:
             print(f"{card.name} (P={effective_power}) is defeated by Kangasaurus Rex.")
-            game_state, defeated = defeat(game_state, card.uuid)
+            game_state = defeat(game_state, card.uuid)
     return game_state
 
 # -- Attack Abilities --

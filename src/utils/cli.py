@@ -96,9 +96,9 @@ class MindbugCLI:
                     else:
                         raise ValueError("Invalid action type.")
                 else:
-                    print("Invalid action number. Please try again.")
+                    print("❌ Invalid action number. Please try again.")
             except ValueError:
-                print("Invalid input. Please enter a number.")
+                print("❌ Invalid input. Please enter a number.")
 
     def get_card_choice(self, game_state: GameState, choice_request: CardChoiceRequest) -> List[Card]:
         """
@@ -131,7 +131,7 @@ class MindbugCLI:
             try:
                 indices = input("\nEnter your choice(s) (comma separated): ")
                 chosen_indices = [int(idx.strip())-1 for idx in indices.split(",") if idx.strip()]
-                chosen_indices = list(set(chosen_indices))  # Remove duplicates
+                chosen_indices = list(dict.fromkeys(chosen_indices))  # Remove duplicates preserving order
                 
                 # Validate choices
                 if not chosen_indices and choice_request.min_choices > 0:
