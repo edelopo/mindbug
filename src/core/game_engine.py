@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 import copy
 from src.models.game_state import GameState
 from src.models.action import (
     Action, PlayCardAction, AttackAction,
-    UseMindbugAction, PassMindbugAction, BlockAction
+    UseMindbugAction, PassMindbugAction,
+    CardChoiceRequest
 )
 from src.models.card import Card
 import src.core.game_rules as GameRules
@@ -38,8 +39,6 @@ class GameEngine:
             return self._handle_play_card_action(new_state, action)
         elif isinstance(action, AttackAction):
             return self._handle_attack_action(new_state, action)
-        elif isinstance(action, BlockAction):
-            return self._handle_block_action(new_state, action)
         else:
             print(f"Unknown or invalid action type: {type(action)}")
             return new_state
@@ -144,96 +143,84 @@ class GameEngine:
     def _handle_attack_action(self, game_state: GameState, action: AttackAction) -> GameState:
         attacking_player = game_state.get_active_player()
         blocking_player = game_state.get_inactive_player()
-        attacking_card_uuid = action.attacking_card_uuid
-
-        for card in attacking_player.play_area:
-            if card.uuid == attacking_card_uuid:
-                attacking_card = card
-                break
-        else:
-            print(f"Error: Card UUID '{attacking_card_uuid}' not found in {attacking_player.id}'s play area.")
-            return game_state # Invalid action, return original state
+        attacking_card = GameRules.get_card_by_uuid(game_state, action.attacking_card_uuid)
 
         print(f"{attacking_player.id}'s {attacking_card.name} attacks!")
 
         # Activate "Attack" abilities (e.g., Tusked Extorter)
         game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid, self.agents)
 
-        # Check if opponent has a blocker
-        exist_valid_blockers = False
-        for card in blocking_player.play_area:
-            if GameRules.is_valid_blocker(
-                blocking_card_uuid=card.uuid, 
-                attacking_card_uuid=attacking_card.uuid, 
-                game_state=game_state,
-            ):
-                exist_valid_blockers = True
-                break
-        
-        if not exist_valid_blockers:
-            # No blockers available, opponent takes damage
-            print(f"{blocking_player.id} has no valid blockers. {attacking_player.id} deals damage directly!")
-            game_state = self.lose_life(game_state, blocking_player.id)
-            game_state = self.end_turn(game_state)  # End turn after attack resolution
-            return game_state
-        else:
-            # Opponent has blockers, transition to block phase
-            print(f"{blocking_player.id} has valid blockers. Transitioning to block phase.")
-            game_state.phase = "block_phase"
-            game_state._pending_attack_card_uuid = attacking_card.uuid  # Store the attacking card for block decision
-            game_state.switch_active_player()
-            return game_state  # Now waiting for BlockAction from opponent
+        blocking_card: Optional[Card] = None
 
-    def _handle_block_action(self, game_state: GameState, action: BlockAction) -> GameState:
-        blocking_player = game_state.get_active_player() # Opponent is active during block phase
-        attacking_player = game_state.get_inactive_player() # The player who attacked
-
-        attacking_card: Optional[Card] = None
-        for card in attacking_player.play_area:
-            if card.uuid == game_state._pending_attack_card_uuid:
-                attacking_card = card
-                break
-        else:
-            raise ValueError(f"Attacking card UUID '{game_state._pending_attack_card_uuid}' not found in {attacking_player.id}'s play area.")
-
-        if action.blocking_card_uuid:
-            # Opponent chose to block
-            blocking_card: Optional[Card] = None
-            for card in blocking_player.play_area:
-                if card.uuid == action.blocking_card_uuid:
-                    blocking_card = card
-                    break
-            else:
-                print(f"Error: Blocking card UUID '{action.blocking_card_uuid}' not found in {blocking_player.id}'s play area.")
-                return game_state
-            
-            is_valid_blocker = GameRules.is_valid_blocker(
-                attacking_card_uuid=attacking_card.uuid, 
-                blocking_card_uuid=blocking_card.uuid,
-                game_state=game_state,
+        # Activate "Hunter" abilitiy
+        if "Hunter" in attacking_card.keywords:
+            # Create a choice request
+            choice_request = CardChoiceRequest(
+                player_id=attacking_player.id,
+                options=blocking_player.play_area,
+                min_choices=0,
+                max_choices=1,
+                purpose="hunt",
+                prompt="Choose an enemy creature that will block the attack."
             )
-            if not is_valid_blocker:
-                print(f"Error: {attacking_card.name} is not a valid blocker.")
-                return game_state
+            # Ask the agent to choose
+            agent = self.agents[attacking_player.id]
+            blocker_list = agent.choose_cards(game_state, choice_request)
+            if blocker_list:
+                blocking_card = blocker_list[0] 
 
-            print(f"{blocking_player.id}'s {blocking_card.name} blocks {attacking_card.name}.")
+        if not blocking_card:
+            # Check if opponent has a blocker
+            valid_blockers = []
+            for card in blocking_player.play_area:
+                if GameRules.is_valid_blocker(
+                    blocking_card_uuid=card.uuid, 
+                    attacking_card_uuid=attacking_card.uuid, 
+                    game_state=game_state,
+                ):
+                    valid_blockers.append(card)
             
+            if not valid_blockers:
+                # No blockers available, opponent takes damage
+                print(f"{blocking_player.id} has no valid blockers. {attacking_player.id} deals damage directly!")
+                game_state = self.lose_life(game_state, blocking_player.id)
+                game_state = self.end_turn(game_state)  # End turn after attack resolution
+                return game_state
+            else:
+                # Opponent has blockers, so they can choose one
+                # Store the attacking card in the game state
+                game_state._pending_attack_card_uuid = attacking_card.uuid 
+                # Create a choice request
+                choice_request = CardChoiceRequest(
+                    player_id=blocking_player.id,
+                    options=valid_blockers,
+                    min_choices=0,
+                    max_choices=1,
+                    purpose="block",
+                    prompt="Choose a creature that will block the attack."
+                )
+                # Ask the agent to choose
+                agent = self.agents[blocking_player.id]
+                blocker_list = agent.choose_cards(game_state, choice_request)
+                if blocker_list:
+                    blocking_card = blocker_list[0] 
+                # Reset the pending attack card
+                del game_state._pending_attack_card_uuid
+
+        if not blocking_card:
+            # No blocker was chosen, opponent takes damage
+            print(f"{blocking_player.id} chooses not to block. {attacking_player.id} deals damage directly!")
+            game_state = self.lose_life(game_state, blocking_player.id)
+        else:
+            print(f"{blocking_card.name} and {attacking_card.name} face each other.")
             # Resolve combat
             game_state, defeated_cards_uuid = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid)
-
             # Activate "Defeated" abilities
             # TODO: Implement phase to choose the order of defeated abilities if there are multiple
             for defeated_card_uuid in defeated_cards_uuid:
                 game_state = GameRules.activate_defeated_ability(game_state, defeated_card_uuid, self.agents)
-        else:
-            # Opponent chose not to block
-            print(f"{blocking_player.id} chooses not to block.")
-            game_state = self.lose_life(game_state, blocking_player.id)
-
-        del game_state._pending_attack_card_uuid  # Clear pending attack state
-        game_state.switch_active_player()  # Switch back to attacking player to get the correct game state
-        game_state = self.end_turn(game_state)  # End turn after block resolution
-
+    
+        game_state = self.end_turn(game_state)
         return game_state
 
     def end_turn(self, game_state: GameState) -> GameState:
@@ -284,22 +271,6 @@ class GameEngine:
                 valid_actions.append({'action': AttackAction(active_player.id, card.uuid),
                                       'card_name': card.name})
 
-        elif game_state.phase == "block_phase":
-            # During the block phase, the active player is the opponent
-            valid_actions.append({'action': BlockAction(active_player.id, None),
-                                  'card_name': "None"})  # Option to not block
-            attacking_card_uuid = game_state._pending_attack_card_uuid
-            if attacking_card_uuid:
-                attacking_card = GameRules.get_card_by_uuid(game_state, attacking_card_uuid)
-                for card in active_player.play_area:
-                    # Check if the card can block the pending attack
-                    if GameRules.is_valid_blocker(
-                        blocking_card_uuid=card.uuid, 
-                        attacking_card_uuid=attacking_card.uuid, 
-                        game_state=game_state
-                    ):
-                        valid_actions.append({'action': BlockAction(active_player.id, card.uuid),
-                                              'card_name': card.name})
             else:
                 # Should not happen in "block_phase"
                 raise ValueError("Block phase entered without a pending attack card.")

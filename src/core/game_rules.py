@@ -36,22 +36,8 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
     Resolves a combat between two cards.
     Returns the updated GameState and a list of defeated card UUIDs.
     """
-    attacker = None
-    for card in game_state.get_inactive_player().play_area: # The attacking player is the inactive player
-        if card.uuid == attacker_uuid:
-            attacker = card
-            break
-    else:
-        raise ValueError(f"Attacker card with UUID {attacker_uuid} not found in play area.")
-    
-    blocker = None
-    for card in game_state.get_active_player().play_area: # The defending player is the active player
-        if card.uuid == blocker_uuid:
-            blocker = card
-            break
-    else:
-        raise ValueError(f"Blocker card with UUID {blocker_uuid} not found in play area.")
-    
+    attacker = get_card_by_uuid(game_state, attacker_uuid)
+    blocker = get_card_by_uuid(game_state, blocker_uuid)
     if attacker.controller is None or blocker.controller is None:
         raise ValueError("Attacker or blocker has no controller. Cannot resolve combat.")
     
@@ -199,6 +185,41 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
 
     return game_state
 
+def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
+    """Compost Dragon's 'Play' effect: Play a card from your discard pile."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+
+    if not player.discard_pile:
+        print(f"{player.id} has no cards in discard pile to play.")
+        return game_state
+
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=player.discard_pile,
+        min_choices=1,
+        max_choices=1,
+        purpose="play",
+        prompt="Choose a card from your discard pile to PLAY."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+    # Move the chosen card from discard pile to play area
+    player.discard_pile.remove(chosen_card)
+    player.play_area.append(chosen_card)
+    chosen_card.controller = player
+    print(f"{player.id} plays {chosen_card.name} from their discard pile.")
+    game_state = activate_play_ability(game_state, chosen_card.uuid, agents)
+
+    return game_state
+
 def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
@@ -214,6 +235,24 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
     return game_state
 
 # -- Attack Abilities --
+
+def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
+    """Chameleon Sniper's 'Attack' effect: The opponent loses a life point."""
+    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+    if attacking_card.controller is None:
+        raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
+    
+    player = attacking_card.controller
+    opponent = game_state.get_opponent_of(player.id)
+    
+    # Opponent loses 1 life
+    opponent.life_points -= 1
+    if opponent.life_points <= 0:
+        game_state.game_over = True
+        game_state.winner_id = player.id
+        print(f"{opponent.id} has no life points left! {game_state.winner_id} wins!")
+
+    return game_state
 
 def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
     """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
@@ -340,12 +379,13 @@ def _handle_hunter_keyword(card: Card):
 play_ability_handlers = {
     "axolotl_healer": _axolotl_healer_play_ability,
     "brain_fly": _brain_fly_play_ability,
+    "compost_dragon": _compost_dragon_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {
     "tusked_extorter": _tusked_extorter_attack_ability,
-    # Add more attack abilities here
+    "chameleon_sniper": _chameleon_sniper_attack_ability,
 }
 # Map card IDs to specific ability functions for "Defeated" effects
 defeated_ability_handlers = {

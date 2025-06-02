@@ -134,7 +134,7 @@ class MindbugCLI:
                 chosen_indices = list(set(chosen_indices))  # Remove duplicates
                 
                 # Validate choices
-                if not chosen_indices:
+                if not chosen_indices and choice_request.min_choices > 0:
                     print("❌ No valid choices made. Please select at least one option.")
                     continue
                     

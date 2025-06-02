@@ -19,12 +19,30 @@
   },
   {
     "id": "brain_fly",
-    "name": "Brain FLy",
+    "name": "Brain Fly",
     "amount": 1,
     "base_power": 4,
     "keywords": [],
     "ability_type": "play",
     "ability_text": "Play: Take control of a creature with power 6 or more."
+  },
+  {
+    "id": "chameleon_sniper",
+    "name": "Chameleon Sniper",
+    "amount": 1,
+    "base_power": 1,
+    "keywords": ["Sneaky"],
+    "ability_type": "attack",
+    "ability_text": "Attack: The opponent loses a life point."
+  },
+  {
+    "id": "compost_dragon",
+    "name": "Compost Dragon",
+    "amount": 2,
+    "base_power": 3,
+    "keywords": ["Hunter"],
+    "ability_type": "play",
+    "ability_text": "Play: Play a card from your discard pile."
   },
   {
     "id": "harpy_mother",
