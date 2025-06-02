@@ -306,6 +306,42 @@ def _giraffodile_play_ability(game_state: GameState, card_uuid: UUID, agents: Di
 
     return game_state
 
+def _grave_robber_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Grave Robber's 'Play' effect: Play a card from the opponent's discard pile."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    if not opponent.discard_pile:
+        print(f"{opponent.id} has no cards in discard pile to play.")
+        return game_state
+
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=opponent.discard_pile,
+        min_choices=1,
+        max_choices=1,
+        purpose="play",
+        prompt="Choose a card from the opponent's discard pile to PLAY."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+    # Move the chosen card from opponent's discard pile to player's play area
+    opponent.discard_pile.remove(chosen_card)
+    player.play_area.append(chosen_card)
+    chosen_card.controller = player
+    print(f"{player.id} plays {chosen_card.name} from {opponent.id}'s discard pile.")
+    game_state = activate_play_ability(game_state, chosen_card.uuid, agents)
+
+    return game_state
+
 def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
@@ -490,6 +526,7 @@ play_ability_handlers = {
     "compost_dragon": _compost_dragon_play_ability,
     "ferret_bomber": _ferret_bomber_play_ability,
     "giraffodile": _giraffodile_play_ability,
+    "grave_robber": _grave_robber_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects

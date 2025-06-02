@@ -108,6 +108,15 @@
     "ability_text": ""
   },
   {
+    "id": "grave_robber",
+    "name": "Grave Robber",
+    "amount": 2,
+    "base_power": 7,
+    "keywords": ["Tough"],
+    "ability_type": "play",
+    "ability_text": "Play: Play a card from the opponent's discard pile."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,
