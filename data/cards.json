@@ -99,6 +99,15 @@
     "ability_text": "Has +6 power while it is your turn."
   },
   {
+    "id": "gorillion",
+    "name": "Gorillion",
+    "amount": 1,
+    "base_power": 10,
+    "keywords": [],
+    "ability_type": "",
+    "ability_text": ""
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,
