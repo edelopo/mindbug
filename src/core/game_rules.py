@@ -356,6 +356,26 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
             game_state = defeat(game_state, card.uuid)
     return game_state
 
+def _killer_bee_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Killer Bee's 'Play' effect: The opponent loses a life point."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+    opponent = game_state.get_opponent_of(player.id)
+    
+    # Opponent loses 1 life
+    opponent.life_points -= 1
+    print(f"{opponent.id} loses 1 life point, now they have {opponent.life_points} left.")
+    
+    if opponent.life_points <= 0:
+        game_state.game_over = True
+        game_state.winner_id = player.id
+        print(f"{opponent.id} has no life points left! {game_state.winner_id} wins!")
+
+    return game_state
+
 # -- Attack Abilities --
 
 def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -528,6 +548,7 @@ play_ability_handlers = {
     "giraffodile": _giraffodile_play_ability,
     "grave_robber": _grave_robber_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
+    "killer_bee": _killer_bee_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {

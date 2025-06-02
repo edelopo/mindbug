@@ -135,6 +135,15 @@
     "ability_text": "Play: Defeat all enemy creatures with power 4 or less."
   },
   {
+    "id": "killer_bee",
+    "name": "Killer Bee",
+    "amount": 2,
+    "base_power": 5,
+    "keywords": ["Hunter"],
+    "ability_type": "play",
+    "ability_text": "Play: The opponent loses a life point."
+  },
+  {
     "id": "shield_bugs",
     "name": "Shield Bugs",
     "amount": 2,
