@@ -45,6 +45,15 @@
     "ability_text": "Play: Play a card from your discard pile."
   },
   {
+    "id": "deathweaver",
+    "name": "Deathweaver",
+    "amount": 1,
+    "base_power": 2,
+    "keywords": ["Poisonous"],
+    "ability_type": "passive",
+    "ability_text": "The opponent cannot activate play effects."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

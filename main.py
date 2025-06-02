@@ -17,17 +17,18 @@ def run_pvp_game():
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
-    # forced_cards_1 = [card for card in all_cards_list if (card.id == 'harpy_mother' or 
-    #                                                     card.id == 'compost_dragon')]
-    # forced_cards_2 = [card for card in all_cards_list if (card.id == 'axolotl_healer')]
+    forced_cards_1 = [card for card in all_cards_list if (card.id == 'deathweaver'
+                                                        #   or card.id == 'compost_dragon'
+                                                          )]
+    forced_cards_2 = [card for card in all_cards_list if (card.id == 'axolotl_healer')]
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
     agents = {player1_id: HumanAgent(player1_id), player2_id: HumanAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
                                          deck_size=5, hand_size=2, 
-                                        #  forced_cards_1=forced_cards_1,
-                                        #  forced_cards_2=forced_cards_2
+                                         forced_cards_1=forced_cards_1,
+                                         forced_cards_2=forced_cards_2
                                          )
     game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
 
@@ -92,7 +93,7 @@ def run_pvai_game():
     print("\n--- Game Finished ---")
     print(f"Winner: {game_state.winner_id}")
 
-def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> str:
+def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> GameState:
     # Suppress prints for AI vs AI games
     sys.stdout = open(os.devnull, 'w')
     sys.stderr = open(os.devnull, 'w')
@@ -134,21 +135,28 @@ def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> str:
     # print(f"Winner: {game_state.winner_id}")
     if not game_state.winner_id:
         raise ValueError("Game ended without a winner.")
-    return game_state.winner_id
+    return game_state
 
 
 if __name__ == "__main__":
-    num_games = 1000
-    deck_size = 5
-    hand_size = 2
-    args_list = [(deck_size, hand_size) for _ in range(num_games)]
+    run_pvp_game()
 
-    with mp.Pool() as pool:
-        results = pool.starmap(run_aivai_game, args_list)
+    # ----------------------
+    # Uncomment the following lines to run AI vs AI games in parallel
+    # ----------------------
+
+    # num_games = 1000
+    # deck_size = 5
+    # hand_size = 2
+    # args_list = [(deck_size, hand_size) for _ in range(num_games)]
+
+    # with mp.Pool() as pool:
+    #     results = pool.starmap(run_aivai_game, args_list)
     
-    # Count wins for each player
-    player1_wins = results.count("Zero Agent")
-    player2_wins = results.count("Random Agent")
+    # # Count wins for each player
+    # winners = [game_state.winner_id for game_state in results]
+    # player1_wins = winners.count("Zero Agent")
+    # player2_wins = winners.count("Random Agent")
 
-    print(f"Zero Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
-    print(f"Random Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")
+    # print(f"Zero Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
+    # print(f"Random Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")
