@@ -64,7 +64,7 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
                 agent = agents[game_state.active_player_id]
                 defeated_cards_with_defeated_abilities = agent.choose_cards(game_state, choice_request)
             for card in defeated_cards_with_defeated_abilities:
-                activate_defeated_ability(game_state, card.uuid, agents)
+                game_state = activate_defeated_ability(game_state, card.uuid, agents)
     return game_state
 
 def resolve_combat(game_state: GameState, attacker_uuid: UUID, 
@@ -84,31 +84,31 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
     print(f"Resolving combat: {attacker.name} (P={effective_attacker_power}) "
             f"vs {blocker.name} (P={effective_blocker_power})")
 
-    defeated_cards = []
+    defeated_cards_UUID: List[UUID] = []
 
     # Check for Poisonous keyword first
     if "Poisonous" in attacker.keywords:
         print(f"{attacker.name} is Poisonous. {blocker.name} is defeated.")
-        defeated_cards.append(blocker)
+        defeated_cards_UUID.append(blocker.uuid)
         
     if "Poisonous" in blocker.keywords:
         print(f"{blocker.name} is Poisonous. {attacker.name} is defeated.")
-        defeated_cards.append(attacker)
+        defeated_cards_UUID.append(attacker.uuid)
 
     # Effective power comparison
     if effective_attacker_power > effective_blocker_power:
         print(f"{attacker.name} defeats {blocker.name}.")
-        defeated_cards.append(blocker)
+        defeated_cards_UUID.append(blocker.uuid)
     elif effective_blocker_power > effective_attacker_power:
         print(f"{blocker.name} defeats {attacker.name}.")
-        defeated_cards.append(attacker)
+        defeated_cards_UUID.append(attacker.uuid)
     else: # Equal power
         print(f"{attacker.name} and {blocker.name} defeat each other.")
-        defeated_cards.append(attacker)
-        defeated_cards.append(blocker)
+        defeated_cards_UUID.append(attacker.uuid)
+        defeated_cards_UUID.append(blocker.uuid)
 
-    defeated_cards = list(set(defeated_cards))  # Remove duplicates
-    game_state = defeat(game_state, defeated_cards, agents) # This handles Choice of order of defeated abilities
+    defeated_cards_UUID = list(set(defeated_cards_UUID))  # Remove duplicates
+    game_state = defeat(game_state, defeated_cards_UUID, agents) # This handles Choice of order of defeated abilities
     
     return game_state
 
@@ -336,7 +336,7 @@ def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UU
     choice_request = CardChoiceRequest(
         player_id=player.id,
         options=valid_targets,
-        min_choices=1,
+        min_choices=min(2, len(valid_targets)),
         max_choices=min(2, len(valid_targets)),
         purpose="steal",
         prompt="Choose up to two creatures with power 5 or less to STEAL."

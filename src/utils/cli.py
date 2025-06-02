@@ -141,6 +141,10 @@ class MindbugCLI:
                 if len(chosen_indices) > choice_request.max_choices:
                     print(f"❌ Too many selections. Please choose at most {choice_request.max_choices}.")
                     continue
+
+                if len(chosen_indices) < choice_request.min_choices:
+                    print(f"❌ Too few selections. Please choose at least {choice_request.min_choices}.")
+                    continue
                 
                 invalid_indices = [i for i in chosen_indices if i < 0 or i >= len(choice_request.options)]
                 if invalid_indices:
