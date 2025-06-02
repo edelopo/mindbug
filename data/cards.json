@@ -63,6 +63,15 @@
     "ability_text": "The opponent cannot block with creatures with power 4 or less."
   },
   {
+    "id": "explosive_toad",
+    "name": "Explosive Toad",
+    "amount": 2,
+    "base_power": 5,
+    "keywords": ["Frenzy"],
+    "ability_type": "defeated",
+    "ability_text": "Defeated: Defeat a creature."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

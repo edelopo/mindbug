@@ -25,8 +25,8 @@ class RandomAgent(BaseAgent):
         Random agent chooses a card at random.
         """
         number_of_cards = random.randint(choice_request.min_choices, choice_request.max_choices)
-        if number_of_cards > len(choice_request.options):
-            print(f"Warning: Requested {number_of_cards} cards, but only {len(choice_request.options)} available.")
+        # if number_of_cards > len(choice_request.options):
+        #     print(f"Warning: Requested {number_of_cards} cards, but only {len(choice_request.options)} available.")
         chosen_cards = random.sample(choice_request.options, k=number_of_cards)
         if not all(isinstance(card, Card) for card in chosen_cards):
             raise ValueError("Chosen cards are not all valid Card objects.")

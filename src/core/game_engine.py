@@ -8,9 +8,10 @@ from src.models.action import (
 )
 from src.models.card import Card
 import src.core.game_rules as GameRules
+from src.agents.base_agent import BaseAgent
 
 class GameEngine:
-    def __init__(self, deck_size: int = 10, hand_size: int = 5, agents: Dict = {}):
+    def __init__(self, deck_size: int = 10, hand_size: int = 5, agents: Dict[str, BaseAgent] = {}):
         self.deck_size = deck_size
         self.hand_size = hand_size
         self.agents = agents
@@ -152,7 +153,7 @@ class GameEngine:
 
         blocking_card: Optional[Card] = None
 
-        # Activate "Hunter" abilitiy
+        # Activate "Hunter" keyword
         if "Hunter" in attacking_card.keywords:
             # Create a choice request
             choice_request = CardChoiceRequest(
@@ -169,8 +170,8 @@ class GameEngine:
             if blocker_list:
                 blocking_card = blocker_list[0] 
 
+        # If no Hunter ability or no blocker was chosen, check if opponent has a blocker
         if not blocking_card:
-            # Check if opponent has a blocker
             valid_blockers = []
             for card in blocking_player.play_area:
                 if GameRules.is_valid_blocker(
@@ -180,13 +181,13 @@ class GameEngine:
                 ):
                     valid_blockers.append(card)
             
-            if not valid_blockers:
-                # No blockers available, opponent takes damage
-                print(f"{blocking_player.id} has no valid blockers. {attacking_player.id} deals damage directly!")
-                game_state = self.lose_life(game_state, blocking_player.id)
-                game_state = self.end_turn(game_state)  # End turn after attack resolution
-                return game_state
-            else:
+            # if not valid_blockers:
+            #     # No blockers available, opponent takes damage
+            #     print(f"{blocking_player.id} has no valid blockers. {attacking_player.id} deals damage directly!")
+            #     game_state = self.lose_life(game_state, blocking_player.id)
+            #     game_state = self.end_turn(game_state)  # End turn after attack resolution
+            #     return game_state
+            if valid_blockers:
                 # Opponent has blockers, so they can choose one
                 # Store the attacking card in the game state
                 game_state._pending_attack_card_uuid = attacking_card.uuid 
@@ -209,14 +210,37 @@ class GameEngine:
 
         if not blocking_card:
             # No blocker was chosen, opponent takes damage
-            print(f"{blocking_player.id} chooses not to block. {attacking_player.id} deals damage directly!")
+            print(f"{blocking_player.id} does not block. {attacking_player.id} deals damage directly!")
             game_state = self.lose_life(game_state, blocking_player.id)
         else:
             print(f"{blocking_card.name} and {attacking_card.name} face each other.")
             # Resolve combat
             game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid, self.agents)
-    
-        game_state = self.end_turn(game_state)
+
+        # Handle "Frenzy" keyword
+        if ("Frenzy" in attacking_card.keywords 
+            and not game_state._frenzy_active # Ensure Frenzy has not already been activated
+            and attacking_card in attacking_player.play_area # Ensure the card has not been defeated
+        ):
+            # If the attacking card has Frenzy, it can choose to attack again immediately
+            choice_request = CardChoiceRequest(
+                player_id=attacking_player.id,
+                options=[attacking_card],
+                min_choices=0,
+                max_choices=1,
+                purpose="attack_again",
+                prompt=f"{attacking_card.name} has Frenzy! Do you want to attack again?"
+            )
+            agent = self.agents[attacking_player.id]
+            attack_again = agent.choose_cards(game_state, choice_request)
+            if attack_again:
+                print(f"{attacking_player.id} chooses to attack again with {attacking_card.name}!")
+                game_state._frenzy_active = True # Set Frenzy state to active
+                game_state = self._handle_attack_action(game_state, action) # Recursively handle the attack again
+                game_state._frenzy_active = False # Reset Frenzy state
+        
+        if not game_state._frenzy_active:
+            game_state = self.end_turn(game_state)
         return game_state
 
     def end_turn(self, game_state: GameState) -> GameState:

@@ -34,6 +34,7 @@ class GameState:
         self.winner_id = winner_id
         self._pending_mindbug_card_uuid: Optional[UUID] = None
         self._pending_attack_card_uuid: Optional[UUID] = None
+        self._frenzy_active: bool = False
 
     @classmethod
     def initial_state(cls,

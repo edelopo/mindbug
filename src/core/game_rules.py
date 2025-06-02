@@ -28,7 +28,8 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
             # Remove defeated card from play area and move to controller's discard pile
             card.controller.discard_pile.append(card)
             card.controller.play_area.remove(card)
-            activate_defeated_ability(game_state, card.uuid, agents)
+            card.is_exhausted = False  # Reset exhausted state
+            game_state = activate_defeated_ability(game_state, card.uuid, agents)
 
     elif isinstance(card_uuids, list):
         defeated_cards = []
@@ -45,6 +46,7 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
                 # Remove defeated card from play area and move to controller's discard pile
                 card.controller.discard_pile.append(card)
                 card.controller.play_area.remove(card)
+                card.is_exhausted = False  # Reset exhausted state
                 defeated_cards.append(card)
         
         # Ask the active player to choose the order of defeated abilities
@@ -68,7 +70,7 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
     return game_state
 
 def resolve_combat(game_state: GameState, attacker_uuid: UUID, 
-                    blocker_uuid: UUID, agents: Dict = {}) -> GameState:
+                    blocker_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """
     Resolves a combat between two cards.
     Returns the updated GameState.
@@ -115,13 +117,13 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
 
 # --- Ability Handlers (called by GameEngine when appropriate) ---
 
-def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents: Dict = {}) -> GameState:
+def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Activates a card's 'Play' ability."""
     card_played = get_card_by_uuid(game_state, card_played_uuid)
     if card_played.controller is None:
         raise ValueError(f"Card with UUID {card_played_uuid} has no controller. Cannot activate play ability.")
     opponent = game_state.get_opponent_of(card_played.controller.id)
-    if 'deathweaver' in [card.id for card in opponent.play_area]:
+    if "deathweaver" in [card.id for card in opponent.play_area]:
         print(f"{card_played.name} cannot activate its play ability because Deathweaver is in play.")
         return game_state
     if card_played.ability_type == "play":
@@ -131,7 +133,7 @@ def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents:
             game_state = handler(copy.deepcopy(game_state), card_played_uuid, agents)
     return game_state
 
-def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
+def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Activates a card's 'Attack' ability."""
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
     if attacking_card.controller is None:
@@ -143,7 +145,7 @@ def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, ag
             game_state = handler(copy.deepcopy(game_state), attacking_card_uuid, agents)
     return game_state
 
-def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict = {}) -> GameState:
+def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Activates a card's 'Defeated' ability."""
     defeated_card = get_card_by_uuid(game_state, defeated_card_uuid)
     if defeated_card.controller is None:
@@ -162,7 +164,7 @@ def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, a
 
 # -- Play Abilities --
 
-def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Axolotl Healer's 'Play' effect: Gain 2 life points."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     player = card_played.controller
@@ -175,7 +177,7 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents:
 
     return game_state
 
-def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Brain Fly's 'Play' effect: Take control of a creature with power 6 or more."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
@@ -216,7 +218,7 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
 
     return game_state
 
-def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Compost Dragon's 'Play' effect: Play a card from your discard pile."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
@@ -251,7 +253,7 @@ def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents:
 
     return game_state
 
-def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
@@ -267,7 +269,7 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
 
 # -- Attack Abilities --
 
-def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Chameleon Sniper's 'Attack' effect: The opponent loses a life point."""
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
     if attacking_card.controller is None:
@@ -285,7 +287,7 @@ def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid:
 
     return game_state
 
-def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
     if attacking_card.controller is None:
@@ -317,7 +319,41 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
 
 # -- Defeated Abilities --
 
-def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict = {}) -> GameState:
+def _explosive_toad_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Explosive Toad's 'Defeated' effect: Defeat a creature."""
+    defeated_card = get_card_by_uuid(game_state, defeated_card_uuid)
+    if defeated_card.controller is None:
+        raise ValueError("Defeated card has no controller. Cannot resolve defeated ability.")
+    
+    player = defeated_card.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    valid_targets = opponent.play_area + player.play_area
+
+    if not valid_targets:
+        print(f"No creatures to defeat.")
+        return game_state
+    
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=valid_targets,
+        min_choices=min(1, len(valid_targets)),
+        max_choices=1,
+        purpose="defeat",
+        prompt="Choose a creature to DEFEAT."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+    # Defeat the chosen card
+    game_state = defeat(game_state, chosen_card.uuid, agents)
+    
+    return game_state
+
+def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Harpy Mother's 'Defeated' effect: Take control of up to two creatures with power 5 or less."""
     defeated_card = get_card_by_uuid(game_state, defeated_card_uuid)
     if defeated_card.controller is None:
@@ -363,7 +399,7 @@ def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UU
 # Some of these are handled at the relevant part of the game logic, such as is_valid_blocker or resolve_combat.
 
 def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID, 
-                                    affected_card_uuid: UUID, agents: Dict = {}) -> int:
+                                    affected_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> int:
     """Shield Bugs' 'Passive' effect: Other allied creatures have +1 power."""
     shield_bugs_card = get_card_by_uuid(game_state, shield_bugs_uuid)
     if shield_bugs_card.controller is None:
@@ -377,32 +413,6 @@ def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID,
     else:
         return 0
 
-
-# --- Keyword Handlers (e.g., during combat or blocking) ---
-
-def _handle_tough_keyword(card: Card):
-    # This is handled directly in resolve_combat for defeat effect.
-    # Could be used for other checks if 'Tough' grants other abilities.
-    pass
-
-def _handle_poisonous_keyword(card: Card):
-    # Handled in resolve_combat.
-    pass
-
-def _handle_frenzy_keyword(card: Card):
-    # This keyword affects `GameEngine`'s attack phase logic (allowing a second attack).
-    # The `GameRules` wouldn't "handle" it directly, but the `GameEngine` would check for it.
-    pass
-
-def _handle_sneaky_keyword(card: Card):
-    # This keyword affects `GameEngine`'s blocking logic.
-    # The `GameEngine` would filter valid blockers based on this.
-    pass
-
-def _handle_hunter_keyword(card: Card):
-    # This keyword affects target selection in `GameEngine`'s attack logic.
-    # The `GameEngine` would offer specific card targets instead of player for attacks.
-    pass
 
 # --- Dicts of Ability Handlers ---
 
@@ -420,20 +430,14 @@ attack_ability_handlers = {
 }
 # Map card IDs to specific ability functions for "Defeated" effects
 defeated_ability_handlers = {
+    "explosive_toad": _explosive_toad_defeated_ability,
     "harpy_mother": _harpy_mother_defeated_ability,
 }
 # Map card IDs to specific ability functions for "Passive" effects
 passive_ability_handlers = {
     "shield_bugs": _shield_bugs_passive_ability,
 }
-# Keyword handlers (e.g., for Tough, Frenzy, Poisonous, Sneaky, Hunter)
-keyword_handlers = {
-    "Tough": _handle_tough_keyword,
-    "Poisonous": _handle_poisonous_keyword,
-    "Frenzy": _handle_frenzy_keyword,
-    "Sneaky": _handle_sneaky_keyword,
-    "Hunter": _handle_hunter_keyword
-}
+
 
 # --- Utility methods for rules ---
 # These might be used by GameEngine to determine valid actions or apply effects.
