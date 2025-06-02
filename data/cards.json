@@ -81,6 +81,15 @@
     "ability_text": "Play: The opponent discards two cards."
   },
   {
+    "id": "giraffodile",
+    "name": "Giraffodile",
+    "amount": 1,
+    "base_power": 7,
+    "keywords": [],
+    "ability_type": "play",
+    "ability_text": "Play: Draw your entire discard pile."
+  },
+  {
     "id": "harpy_mother",
     "name": "Harpy Mother",
     "amount": 1,

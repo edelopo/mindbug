@@ -285,6 +285,27 @@ def _ferret_bomber_play_ability(game_state: GameState, card_uuid: UUID, agents: 
 
     return game_state
 
+def _giraffodile_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Giraffodile's 'Play' effect: Draw your entire discard pile."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+
+    if not player.discard_pile:
+        print(f"{player.id} has no cards in discard pile to draw.")
+        return game_state
+
+    # Move all cards from discard pile to hand
+    for card in player.discard_pile[:]:  # Slice to avoid modifying while iterating
+        player.hand.append(card)
+        player.discard_pile.remove(card)
+        card.controller = player  # Ensure the controller is set correctly
+        print(f"{player.id} draws {card.name} from their discard pile.")
+
+    return game_state
+
 def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
@@ -454,6 +475,7 @@ play_ability_handlers = {
     "brain_fly": _brain_fly_play_ability,
     "compost_dragon": _compost_dragon_play_ability,
     "ferret_bomber": _ferret_bomber_play_ability,
+    "giraffodile": _giraffodile_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
