@@ -270,10 +270,6 @@ class GameEngine:
             for card in active_player.play_area:
                 valid_actions.append({'action': AttackAction(active_player.id, card.uuid),
                                       'card_name': card.name})
-
-            else:
-                # Should not happen in "block_phase"
-                raise ValueError("Block phase entered without a pending attack card.")
             
         elif game_state.phase == "end_turn_phase":
             raise ValueError("Invalid game phase: end_turn_phase. This should not be directly queried for actions.")
