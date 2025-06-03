@@ -189,6 +189,15 @@
     "ability_text": ""
   },
   {
+    "id": "shark_dog",
+    "name": "Shark Dog",
+    "amount": 1,
+    "base_power": 4,
+    "keywords": ["Hunter"],
+    "ability_type": "attack",
+    "ability_text": "Attack: Defeat an enemy creature with power 6 or more."
+  },
+  {
     "id": "shield_bugs",
     "name": "Shield Bugs",
     "amount": 2,

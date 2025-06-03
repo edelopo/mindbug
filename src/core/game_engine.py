@@ -152,7 +152,10 @@ class GameEngine:
 
         # Activate "Attack" abilities (e.g., Tusked Extorter)
         game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid, self.agents)
-
+        # Refresh the players after the game_state has been updated
+        attacking_player = game_state.get_active_player()
+        blocking_player = game_state.get_inactive_player()
+        
         blocking_card: Optional[Card] = None
 
         # Activate "Hunter" keyword

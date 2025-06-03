@@ -376,7 +376,7 @@ def _killer_bee_play_ability(game_state: GameState, card_uuid: UUID, agents: Dic
 
     return game_state
 
-def _mysterious_memaid_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+def _mysterious_mermaid_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Mysterious Mermaid's 'Play' effect: Set your life points equal to the opponent's."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
@@ -439,6 +439,44 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
     opponent.discard_card(chosen_card)
     print(f"{opponent.id} discards {chosen_card.name} due to Tusked Extorter.")
 
+    return game_state
+
+def _shark_dog_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Shark Dog's 'Attack' effect: Defeat an enemy creature with power 6 or more."""
+    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+    if attacking_card.controller is None:
+        raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
+    
+    player = attacking_card.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    valid_targets = []
+    for card in opponent.play_area:
+        effective_power = get_effective_power(game_state, card.uuid)
+        if effective_power >= 6:
+            valid_targets.append(card)
+
+    if not valid_targets:
+        print(f"No valid creatures with power 6 or more to defeat.")
+        return game_state
+    
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=valid_targets,
+        min_choices=1,
+        max_choices=1,
+        purpose="defeat",
+        prompt="Choose a creature with power 6 or more to DEFEAT."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+    # Defeat the chosen card
+    game_state = defeat(game_state, chosen_card.uuid, agents)
+    
     return game_state
 
 # -- Defeated Abilities --
@@ -575,12 +613,13 @@ play_ability_handlers = {
     "grave_robber": _grave_robber_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
     "killer_bee": _killer_bee_play_ability,
-    "mysterious_memaid": _mysterious_memaid_play_ability,
+    "mysterious_mermaid": _mysterious_mermaid_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {
     "tusked_extorter": _tusked_extorter_attack_ability,
     "chameleon_sniper": _chameleon_sniper_attack_ability,
+    "shark_dog": _shark_dog_attack_ability,
 }
 # Map card IDs to specific ability functions for "Defeated" effects
 defeated_ability_handlers = {
