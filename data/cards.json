@@ -234,6 +234,15 @@
     "ability_text": "Other allied creatures with power 4 or less have Hunter and Poisonous."
   },
   {
+    "id": "spider_owl",
+    "name": "Spider Owl",
+    "amount": 2,
+    "base_power": 3,
+    "keywords": ["Sneaky", "Poisonous"],
+    "ability_type": "",
+    "ability_text": ""
+  },
+  {
     "id": "tusked_extorter",
     "name": "Tusked Extorter",
     "amount": 2,

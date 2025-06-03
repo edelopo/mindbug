@@ -18,13 +18,13 @@ def run_pvp_game():
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
     forced_cards_1 = [card for card in all_cards_list if (
-        card.id == 'mysterious_mermaid'
-        #   or card.id == 'elephantopus'
+        card.id == 'snail_thrower'
+        or card.id == 'ferret_bomber'
     )]
-    forced_cards_2 = [card for card in all_cards_list if (
-        card.id == 'lone_yeti'
-        # or card.id == 'chameleon_sniper'
-    )]
+    # forced_cards_2 = [card for card in all_cards_list if (
+    #     card.id == 'lone_yeti'
+    #     # or card.id == 'chameleon_sniper'
+    # )]
 
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
@@ -32,7 +32,7 @@ def run_pvp_game():
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
                                          deck_size=5, hand_size=2, 
                                          forced_cards_1=forced_cards_1,
-                                         forced_cards_2=forced_cards_2
+                                        #  forced_cards_2=forced_cards_2
                                          )
     game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
 
