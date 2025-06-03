@@ -144,6 +144,15 @@
     "ability_text": "Play: The opponent loses a life point."
   },
   {
+    "id": "lone_yeti",
+    "name": "Lone Yeti",
+    "amount": 1,
+    "base_power": 5,
+    "keywords": ["Tough"],
+    "ability_type": "passive",
+    "ability_text": "While this is your only allied creature, it has +5 power and Frenzy."
+  },
+  {
     "id": "shield_bugs",
     "name": "Shield Bugs",
     "amount": 2,

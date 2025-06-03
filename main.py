@@ -22,7 +22,7 @@ def run_pvp_game():
         #   or card.id == 'elephantopus'
     )]
     forced_cards_2 = [card for card in all_cards_list if (
-        card.id == 'compost_dragon'
+        card.id == 'lone_yeti'
         # or card.id == 'chameleon_sniper'
     )]
 
@@ -146,33 +146,33 @@ def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> GameState:
 
 
 if __name__ == "__main__":
-    # run_pvp_game()
+    run_pvp_game()
 
     # ----------------------
     # Uncomment the following lines to run AI vs AI games in parallel
     # ----------------------
 
-    num_games = 1000
-    deck_size = 10
-    hand_size = 5
-    args_list = [(deck_size, hand_size) for _ in range(num_games)]
+    # num_games = 1000
+    # deck_size = 10
+    # hand_size = 5
+    # args_list = [(deck_size, hand_size) for _ in range(num_games)]
 
-    # Run the games in parallel using multiprocessing
-    with mp.Pool() as pool:
-        results = pool.starmap(run_aivai_game, args_list)
+    # # Run the games in parallel using multiprocessing
+    # with mp.Pool() as pool:
+    #     results = pool.starmap(run_aivai_game, args_list)
 
-    # # Run the games sequentially for debugging
-    # results = [run_aivai_game(deck_size, hand_size) for _ in range(num_games)]
+    # # # Run the games sequentially for debugging
+    # # results = [run_aivai_game(deck_size, hand_size) for _ in range(num_games)]
 
-    # Re-enable prints
-    sys.stdout = sys.__stdout__
-    sys.stderr = sys.__stderr__
-    print(f"--- Completed {num_games} AI vs AI games ---")
+    # # Re-enable prints
+    # sys.stdout = sys.__stdout__
+    # sys.stderr = sys.__stderr__
+    # print(f"--- Completed {num_games} AI vs AI games ---")
     
-    # Count wins for each player
-    winners = [game_state.winner_id for game_state in results]
-    player1_wins = winners.count("Zero Agent")
-    player2_wins = winners.count("Random Agent")
+    # # Count wins for each player
+    # winners = [game_state.winner_id for game_state in results]
+    # player1_wins = winners.count("Zero Agent")
+    # player2_wins = winners.count("Random Agent")
 
-    print(f"Zero Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
-    print(f"Random Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")
+    # print(f"Zero Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
+    # print(f"Random Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")

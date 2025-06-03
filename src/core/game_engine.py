@@ -156,7 +156,7 @@ class GameEngine:
         blocking_card: Optional[Card] = None
 
         # Activate "Hunter" keyword
-        if "Hunter" in attacking_card.keywords:
+        if "Hunter" in GameRules.get_effective_keywords(game_state, attacking_card.uuid):
             # Create a choice request
             choice_request = CardChoiceRequest(
                 player_id=attacking_player.id,
@@ -164,7 +164,7 @@ class GameEngine:
                 min_choices=0,
                 max_choices=min(1, len(blocking_player.play_area)),
                 purpose="hunt",
-                prompt="Choose an enemy creature that will block the attack."
+                prompt=f"{attacking_player.id}, HUNT an enemy creature that will block the attack (or none)."
             )
             # Ask the agent to choose
             agent = self.agents[attacking_player.id]
@@ -200,7 +200,7 @@ class GameEngine:
                     min_choices=0,
                     max_choices=1,
                     purpose="block",
-                    prompt="Choose a creature that will block the attack."
+                    prompt=f"{blocking_player.id}, choose a creature that will BLOCK the attack."
                 )
                 # Ask the agent to choose
                 agent = self.agents[blocking_player.id]
@@ -222,7 +222,7 @@ class GameEngine:
         # Handle "Frenzy" keyword
         attacking_player = game_state.get_player(attacking_player.id) # Refresh player state after combat resolution
         attacking_card = GameRules.get_card_by_uuid(game_state, action.attacking_card_uuid)
-        if ("Frenzy" in attacking_card.keywords 
+        if ("Frenzy" in GameRules.get_effective_keywords(game_state, attacking_card.uuid) 
             and not game_state._frenzy_active # Ensure Frenzy has not already been activated
             and attacking_card in attacking_player.play_area # Ensure the card has not been defeated
         ):

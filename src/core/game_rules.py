@@ -21,7 +21,7 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
             raise ValueError("Card has no controller. Cannot defeat.")   
 
         # Apply Tough
-        if "Tough" in card.keywords and not card.is_exhausted:
+        if "Tough" in get_effective_keywords(game_state, card.uuid) and not card.is_exhausted:
             print(f"{card.name} is Tough. It becomes exhausted instead of defeated.")
             card.is_exhausted = True
         else:
@@ -39,7 +39,7 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
                 raise ValueError("Card has no controller. Cannot defeat.")
             
             # Apply Tough
-            if "Tough" in card.keywords and not card.is_exhausted:
+            if "Tough" in get_effective_keywords(game_state, card.uuid) and not card.is_exhausted:
                 print(f"{card.name} is Tough. It becomes exhausted instead of defeated.")
                 card.is_exhausted = True
             else:
@@ -89,11 +89,11 @@ def resolve_combat(game_state: GameState, attacker_uuid: UUID,
     defeated_cards_UUID: List[UUID] = []
 
     # Check for Poisonous keyword first
-    if "Poisonous" in attacker.keywords:
+    if "Poisonous" in get_effective_keywords(game_state, attacker.uuid):
         print(f"{attacker.name} is Poisonous. {blocker.name} is defeated.")
         defeated_cards_UUID.append(blocker.uuid)
         
-    if "Poisonous" in blocker.keywords:
+    if "Poisonous" in get_effective_keywords(game_state, blocker.uuid):
         print(f"{blocker.name} is Poisonous. {attacker.name} is defeated.")
         defeated_cards_UUID.append(attacker.uuid)
 
@@ -521,6 +521,17 @@ def _goblin_werewolf_passive_ability(game_state: GameState, goblin_werewolf_uuid
     else:
         raise ValueError("Goblin Werewolf card has no controller. Cannot resolve passive ability.")
 
+def _lone_yeti_passive_ability(game_state: GameState, lone_yeti_uuid: UUID,
+                                affected_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> int:
+    """Lone Yeti's 'Passive' effect: While this is your only allied creature, it has +5 power and Frenzy."""
+    lone_yeti = get_card_by_uuid(game_state, lone_yeti_uuid)
+    if lone_yeti.controller is None:
+        raise ValueError("Lone Yeti card has no controller. Cannot resolve passive ability.")
+    play_area = lone_yeti.controller.play_area
+    if len(play_area) == 1 and play_area[0].uuid == lone_yeti_uuid and affected_card_uuid == lone_yeti_uuid:
+        return 5
+    return 0
+    
 def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID, 
                                     affected_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> int:
     """Shield Bugs' 'Passive' effect: Other allied creatures have +1 power."""
@@ -563,6 +574,7 @@ defeated_ability_handlers = {
 # Map card IDs to specific ability functions for "Passive" effects
 passive_ability_handlers = {
     "goblin_werewolf": _goblin_werewolf_passive_ability,
+    "lone_yeti": _lone_yeti_passive_ability,
     "shield_bugs": _shield_bugs_passive_ability,
 }
 
@@ -581,7 +593,8 @@ def is_valid_blocker(blocking_card_uuid: UUID, attacking_card_uuid: UUID,
 
     blocking_card_effective_power = get_effective_power(game_state, blocking_card.uuid)
 
-    if "Sneaky" in attacking_card.keywords and "Sneaky" not in blocking_card.keywords:
+    if ("Sneaky" in get_effective_keywords(game_state, attacking_card_uuid) 
+        and "Sneaky" not in get_effective_keywords(game_state, blocking_card_uuid)):
         return False # Sneaky can only be blocked by Sneaky
     
     # Bee Bear ability
@@ -617,3 +630,20 @@ def get_effective_power(game_state: GameState, card_uuid: UUID) -> int:
     
     return effective_power
     
+def get_effective_keywords(game_state: GameState, card_uuid: UUID) -> List[str]:
+    """Returns the effective keywords of a card, considering any passive effects."""
+    card = get_card_by_uuid(game_state, card_uuid)
+    effective_keywords = set(card.keywords)
+
+    player = card.controller
+    if player is None:
+        raise ValueError("Card has no controller. Cannot resolve effective keywords.")
+    opponent = game_state.get_opponent_of(player.id)
+    if opponent is None:
+        raise ValueError("Opponent not found. Cannot resolve effective keywords.")
+
+    # Lone Yeti passive ability
+    if card.id == "lone_yeti" and len(player.play_area) == 1:
+        effective_keywords.add("Frenzy")
+    
+    return list(effective_keywords)
