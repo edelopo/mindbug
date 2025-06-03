@@ -19,7 +19,7 @@ def run_pvp_game():
     # Make a list of forced cards for testing purposes
     forced_cards_1 = [card for card in all_cards_list if (
         card.id == 'snail_thrower'
-        or card.id == 'ferret_bomber'
+        or card.id == 'urchin_hurler'
     )]
     # forced_cards_2 = [card for card in all_cards_list if (
     #     card.id == 'lone_yeti'

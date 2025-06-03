@@ -277,5 +277,14 @@
     "keywords": [],
     "ability_type": "attack",
     "ability_text": "Attack: The opponent discards a card."
+  },
+  {
+    "id": "urchin_hurler",
+    "name": "Urchin Hurler",
+    "amount": 1,
+    "base_power": 5,
+    "keywords": ["Hunter"],
+    "ability_type": "passive",
+    "ability_text": "Other allied creatures have +2 power while it is your turn."
   }
 ]

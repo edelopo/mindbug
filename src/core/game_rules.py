@@ -714,6 +714,20 @@ def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID,
     else:
         return 0
 
+def _urchin_hurler_passive_ability(game_state: GameState, urchin_hurler_uuid: UUID,
+                                    affected_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> int:
+    """Urchin Hurler's 'Passive' effect: Other allied creatures have +2 power while it is your turn."""
+    urchin_hurler_card = get_card_by_uuid(game_state, urchin_hurler_uuid)
+    affected_card = get_card_by_uuid(game_state, affected_card_uuid)
+    if affected_card.controller is None:
+        raise ValueError("Affected card has no controller. Cannot resolve passive ability.")
+    if urchin_hurler_card.controller is None:
+        raise ValueError("Urchin Hurler card has no controller. Cannot resolve passive ability.")
+    if (game_state.active_player_id == urchin_hurler_card.controller.id
+        and affected_card.controller.id == urchin_hurler_card.controller.id
+        and affected_card_uuid != urchin_hurler_uuid):
+        return 2
+    return 0
 
 # --- Dicts of Ability Handlers ---
 
@@ -749,6 +763,7 @@ passive_ability_handlers = {
     "goblin_werewolf": _goblin_werewolf_passive_ability,
     "lone_yeti": _lone_yeti_passive_ability,
     "shield_bugs": _shield_bugs_passive_ability,
+    "urchin_hurler": _urchin_hurler_passive_ability,
 }
 
 
