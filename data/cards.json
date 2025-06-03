@@ -252,6 +252,15 @@
     "ability_text": "Defeated: Steal two random cards from the opponent's hand."
   },
   {
+    "id": "tiger_squirrel",
+    "name": "Tiger Squirrel",
+    "amount": 2,
+    "base_power": 3,
+    "keywords": ["Sneaky"],
+    "ability_type": "play",
+    "ability_text": "Play: Defeat an enemy creature with power 7 or more."
+  },
+  {
     "id": "tusked_extorter",
     "name": "Tusked Extorter",
     "amount": 2,

@@ -391,6 +391,44 @@ def _mysterious_mermaid_play_ability(game_state: GameState, card_uuid: UUID, age
 
     return game_state
 
+def _tiger_squirrel_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Tiger Squirrel's 'Play' effect: Defeat an enemy creature with power 7 or more."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    valid_targets = []
+    for card in opponent.play_area:
+        effective_power = get_effective_power(game_state, card.uuid)
+        if effective_power >= 7:
+            valid_targets.append(card)
+
+    if not valid_targets:
+        print(f"No valid creatures with power 7 or more to defeat.")
+        return game_state
+    
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=player.id,
+        options=valid_targets,
+        min_choices=1,
+        max_choices=1,
+        purpose="defeat",
+        prompt="Choose a creature with power 7 or more to DEFEAT."
+    )
+
+    # Ask the agent to choose
+    agent = agents[player.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+    # Defeat the chosen card
+    game_state = defeat(game_state, chosen_card.uuid, agents)
+    
+    return game_state
+
 # -- Attack Abilities --
 
 def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -675,6 +713,7 @@ play_ability_handlers = {
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
     "killer_bee": _killer_bee_play_ability,
     "mysterious_mermaid": _mysterious_mermaid_play_ability,
+    "tiger_squirrel": _tiger_squirrel_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {
