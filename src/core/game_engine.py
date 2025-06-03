@@ -155,7 +155,11 @@ class GameEngine:
         # Refresh the players after the game_state has been updated
         attacking_player = game_state.get_active_player()
         blocking_player = game_state.get_inactive_player()
-        
+        if (attacking_card.uuid not in [card.uuid for card in attacking_player.play_area]):
+            # The attacking card was defeated during the attack ability activation
+            print(f"{attacking_card.name} was defeated during attack ability activation. The attack is cancelled.")
+            return game_state
+
         blocking_card: Optional[Card] = None
 
         # Activate "Hunter" keyword

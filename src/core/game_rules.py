@@ -139,7 +139,7 @@ def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, ag
     if attacking_card.controller is None:
         raise ValueError(f"Attacking card with UUID {attacking_card_uuid} has no controller. Cannot activate attack ability.")
     if attacking_card.ability_type == "attack":
-        print(f"Activating Attack ability for {attacking_card.name}")
+        print(f"Activating Attack ability for {attacking_card.name}.")
         handler = attack_ability_handlers.get(attacking_card.id)
         if handler:
             game_state = handler(copy.deepcopy(game_state), attacking_card_uuid, agents)
@@ -151,7 +151,7 @@ def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, a
     if defeated_card.controller is None:
         raise ValueError(f"Defeated card with UUID {defeated_card_uuid} has no controller. Cannot activate defeated ability.")
     if defeated_card.ability_type == "defeated":
-        print(f"Activating Defeated ability for {defeated_card.name}")
+        print(f"Activating Defeated ability for {defeated_card.name}.")
         handler = defeated_ability_handlers.get(defeated_card.id)
         if handler:
             game_state = handler(copy.deepcopy(game_state), defeated_card_uuid, agents)
@@ -483,6 +483,7 @@ def _shark_dog_attack_ability(game_state: GameState, attacking_card_uuid: UUID, 
     chosen_card = agent.choose_cards(game_state, choice_request)[0]
 
     # Defeat the chosen card
+    print(f"{player.id} defeats {chosen_card.name} with Shark Dog's attack ability.")
     game_state = defeat(game_state, chosen_card.uuid, agents)
     
     return game_state
@@ -498,7 +499,8 @@ def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID
 
     # Check if player controls fewer creatures than opponent
     if len(player.play_area) < len(opponent.play_area):
-        valid_targets = opponent.play_area + player.play_area  # Can defeat any creature
+        valid_targets = opponent.play_area + player.play_area  # Can defeat any creature (except itself)
+        valid_targets = [card for card in valid_targets if card.uuid != attacking_card.uuid]  # Exclude itself
 
         if not valid_targets:
             print(f"No creatures to defeat.")
@@ -519,6 +521,7 @@ def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID
         chosen_card = agent.choose_cards(game_state, choice_request)[0]
 
         # Defeat the chosen card
+        print(f"{player.id} defeats {chosen_card.name} with Snail Hydra's attack ability.")
         game_state = defeat(game_state, chosen_card.uuid, agents)
 
     return game_state
@@ -600,6 +603,7 @@ def _explosive_toad_defeated_ability(game_state: GameState, defeated_card_uuid: 
     chosen_card = agent.choose_cards(game_state, choice_request)[0]
 
     # Defeat the chosen card
+    print(f"{player.id} defeats {chosen_card.name} with Explosive Toad's attack ability.")
     game_state = defeat(game_state, chosen_card.uuid, agents)
     
     return game_state
