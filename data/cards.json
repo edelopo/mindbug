@@ -153,6 +153,42 @@
     "ability_text": "While this is your only allied creature, it has +5 power and Frenzy."
   },
   {
+    "id": "luchataur",
+    "name": "Luchataur",
+    "amount": 2,
+    "base_power": 9,
+    "keywords": ["Frenzy"],
+    "ability_type": "",
+    "ability_text": ""
+  },
+  {
+    "id": "mysterious_mermaid",
+    "name": "Mysterious Mermaid",
+    "amount": 1,
+    "base_power": 7,
+    "keywords": [],
+    "ability_type": "play",
+    "ability_text": "Play: Set your life points equal to the opponent's."
+  },
+  {
+    "id": "plated_scorpion",
+    "name": "Plated Scorpion",
+    "amount": 2,
+    "base_power": 2,
+    "keywords": ["Tough", "Poisonous"],
+    "ability_type": "",
+    "ability_text": ""
+  },
+  {
+    "id": "rhyno_turtle",
+    "name": "Rhyno Turtle",
+    "amount": 2,
+    "base_power": 8,
+    "keywords": ["Frenzy", "Tough"],
+    "ability_type": "",
+    "ability_text": ""
+  },
+  {
     "id": "shield_bugs",
     "name": "Shield Bugs",
     "amount": 2,

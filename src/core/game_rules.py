@@ -376,6 +376,21 @@ def _killer_bee_play_ability(game_state: GameState, card_uuid: UUID, agents: Dic
 
     return game_state
 
+def _mysterious_memaid_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Mysterious Mermaid's 'Play' effect: Set your life points equal to the opponent's."""
+    card_played = get_card_by_uuid(game_state, card_uuid)
+    if card_played.controller is None:
+        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+    
+    player = card_played.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    # Set player's life points to opponent's life points
+    player.life_points = opponent.life_points
+    print(f"{player.id}'s life points are now set to {player.life_points}.")
+
+    return game_state
+
 # -- Attack Abilities --
 
 def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -560,6 +575,7 @@ play_ability_handlers = {
     "grave_robber": _grave_robber_play_ability,
     "kangasaurus_rex": _kangasaurus_rex_play_ability,
     "killer_bee": _killer_bee_play_ability,
+    "mysterious_memaid": _mysterious_memaid_play_ability,
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {
