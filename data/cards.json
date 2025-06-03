@@ -198,6 +198,15 @@
     "ability_text": "Attack: Defeat an enemy creature with power 6 or more."
   },
   {
+    "id": "sharky_crab-dog-mummypus",
+    "name": "Sharky Crab-Dog-Mummypus",
+    "amount": 1,
+    "base_power": 5,
+    "keywords": [],
+    "ability_type": "passive",
+    "ability_text": "Has Hunter while an enemy creature does. Repeat for Sneaky, Frenzy and Poisonous."
+  },
+  {
     "id": "shield_bugs",
     "name": "Shield Bugs",
     "amount": 2,
@@ -205,6 +214,15 @@
     "keywords": ["Tough"],
     "ability_type": "passive",
     "ability_text": "Other allied creatures have +1 power."
+  },
+  {
+    "id": "snail_hydra",
+    "name": "Snail Hydra",
+    "amount": 2,
+    "base_power": 9,
+    "keywords": [],
+    "ability_type": "attack",
+    "ability_text": "Attack: If you control fewer creatures than your opponent, defeat a creature."
   },
   {
     "id": "tusked_extorter",

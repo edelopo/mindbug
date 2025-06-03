@@ -479,6 +479,42 @@ def _shark_dog_attack_ability(game_state: GameState, attacking_card_uuid: UUID, 
     
     return game_state
 
+def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Snail Hydra's 'Attack' effect: If you control fewer creatures than your opponent, defeat a creature."""
+    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+    if attacking_card.controller is None:
+        raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
+    
+    player = attacking_card.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    # Check if player controls fewer creatures than opponent
+    if len(player.play_area) < len(opponent.play_area):
+        valid_targets = opponent.play_area + player.play_area  # Can defeat any creature
+
+        if not valid_targets:
+            print(f"No creatures to defeat.")
+            return game_state
+        
+        # Create a choice request
+        choice_request = CardChoiceRequest(
+            player_id=player.id,
+            options=valid_targets,
+            min_choices=1,
+            max_choices=1,
+            purpose="defeat",
+            prompt="Choose a creature to DEFEAT."
+        )
+
+        # Ask the agent to choose
+        agent = agents[player.id]
+        chosen_card = agent.choose_cards(game_state, choice_request)[0]
+
+        # Defeat the chosen card
+        game_state = defeat(game_state, chosen_card.uuid, agents)
+
+    return game_state
+
 # -- Defeated Abilities --
 
 def _explosive_toad_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -620,6 +656,7 @@ attack_ability_handlers = {
     "tusked_extorter": _tusked_extorter_attack_ability,
     "chameleon_sniper": _chameleon_sniper_attack_ability,
     "shark_dog": _shark_dog_attack_ability,
+    "snail_hydra": _snail_hydra_attack_ability,
 }
 # Map card IDs to specific ability functions for "Defeated" effects
 defeated_ability_handlers = {
@@ -700,5 +737,12 @@ def get_effective_keywords(game_state: GameState, card_uuid: UUID) -> List[str]:
     # Lone Yeti passive ability
     if card.id == "lone_yeti" and len(player.play_area) == 1:
         effective_keywords.add("Frenzy")
+
+    # Sharky Crab-Dog-Mummypus passive ability
+    if card.id == "sharky_crab-dog-mummypus":
+        for card in opponent.play_area:
+            for keyword in card.keywords:
+                if keyword in ["Hunter", "Sneaky", "Frenzy", "Poisonous"]:
+                    effective_keywords.add(keyword)
     
     return list(effective_keywords)
