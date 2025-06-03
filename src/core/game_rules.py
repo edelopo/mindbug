@@ -449,36 +449,6 @@ def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid:
 
     return game_state
 
-def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
-    """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
-    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
-    if attacking_card.controller is None:
-        raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
-    
-    opponent = game_state.get_opponent_of(attacking_card.controller.id)
-    
-    if not opponent.hand:
-        print(f"{opponent.id}'s hand is empty, cannot discard.")
-        return game_state
-
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=opponent.id,
-        options=opponent.hand,
-        min_choices=1,
-        max_choices=1,
-        purpose="discard",
-        prompt="Choose a card to DISCARD."
-    )
-
-    # Ask the agent to choose
-    agent = agents[opponent.id]
-    chosen_card = agent.choose_cards(game_state, choice_request)[0]
-    opponent.discard_card(chosen_card)
-    print(f"{opponent.id} discards {chosen_card.name} due to Tusked Extorter.")
-
-    return game_state
-
 def _shark_dog_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Shark Dog's 'Attack' effect: Defeat an enemy creature with power 6 or more."""
     attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
@@ -550,6 +520,51 @@ def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID
 
         # Defeat the chosen card
         game_state = defeat(game_state, chosen_card.uuid, agents)
+
+    return game_state
+
+def _turbo_bug_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Turbo Bug's 'Attack' effect: The opponent loses all life points except one."""
+    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+    if attacking_card.controller is None:
+        raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
+    
+    opponent = game_state.get_opponent_of(attacking_card.controller.id)
+
+    # Set opponent's life points to 1
+    if opponent.life_points >= 1:
+        print(f"{opponent.id} loses all life points except one due to Turbo Bug.")
+        opponent.life_points = 1
+
+    return game_state
+
+def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Tusked Extorter's 'Attack' effect: The opponent discards a card."""
+    attacking_card = get_card_by_uuid(game_state, attacking_card_uuid)
+    if attacking_card.controller is None:
+        raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
+    
+    opponent = game_state.get_opponent_of(attacking_card.controller.id)
+    
+    if not opponent.hand:
+        print(f"{opponent.id}'s hand is empty, cannot discard.")
+        return game_state
+
+    # Create a choice request
+    choice_request = CardChoiceRequest(
+        player_id=opponent.id,
+        options=opponent.hand,
+        min_choices=1,
+        max_choices=1,
+        purpose="discard",
+        prompt="Choose a card to DISCARD."
+    )
+
+    # Ask the agent to choose
+    agent = agents[opponent.id]
+    chosen_card = agent.choose_cards(game_state, choice_request)[0]
+    opponent.discard_card(chosen_card)
+    print(f"{opponent.id} discards {chosen_card.name} due to Tusked Extorter.")
 
     return game_state
 
@@ -717,10 +732,11 @@ play_ability_handlers = {
 }
 # Map card IDs to specific ability functions for "Attack" effects
 attack_ability_handlers = {
-    "tusked_extorter": _tusked_extorter_attack_ability,
     "chameleon_sniper": _chameleon_sniper_attack_ability,
     "shark_dog": _shark_dog_attack_ability,
     "snail_hydra": _snail_hydra_attack_ability,
+    "turbo_bug": _turbo_bug_attack_ability,
+    "tusked_extorter": _tusked_extorter_attack_ability,
 }
 # Map card IDs to specific ability functions for "Defeated" effects
 defeated_ability_handlers = {

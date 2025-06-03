@@ -261,6 +261,15 @@
     "ability_text": "Play: Defeat an enemy creature with power 7 or more."
   },
   {
+    "id": "turbo_bug",
+    "name": "Turbo Bug",
+    "amount": 1,
+    "base_power": 4,
+    "keywords": [],
+    "ability_type": "attack",
+    "ability_text": "Attack: The opponent loses all life points except one."
+  },
+  {
     "id": "tusked_extorter",
     "name": "Tusked Extorter",
     "amount": 2,
