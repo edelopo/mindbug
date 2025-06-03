@@ -243,6 +243,15 @@
     "ability_text": ""
   },
   {
+    "id": "strange_barrel",
+    "name": "Strange Barrel",
+    "amount": 1,
+    "base_power": 6,
+    "keywords": [],
+    "ability_type": "defeated",
+    "ability_text": "Defeated: Steal two random cards from the opponent's hand."
+  },
+  {
     "id": "tusked_extorter",
     "name": "Tusked Extorter",
     "amount": 2,

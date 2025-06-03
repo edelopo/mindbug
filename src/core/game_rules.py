@@ -593,6 +593,31 @@ def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UU
 
     return game_state
 
+def _strange_barrel_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
+    """Strange Barrel's 'Defeated' effect: Steal two random cards from the opponent's hand."""
+    defeated_card = get_card_by_uuid(game_state, defeated_card_uuid)
+    if defeated_card.controller is None:
+        raise ValueError("Defeated card has no controller. Cannot resolve defeated ability.")
+    
+    player = defeated_card.controller
+    opponent = game_state.get_opponent_of(player.id)
+
+    if not opponent.hand:
+        print(f"{opponent.id} has no cards in hand to steal.")
+        return game_state
+
+    # Randomly select up to two cards from opponent's hand
+    num_to_steal = min(2, len(opponent.hand))
+    stolen_cards = random.sample(opponent.hand, num_to_steal)
+
+    for card in stolen_cards:
+        opponent.hand.remove(card)
+        player.hand.append(card)
+        card.controller = player
+        print(f"{player.id} steals {card.name} from {opponent.id}'s hand.")
+
+    return game_state
+
 # -- Passive Abilities --
 # Some of these are handled at the relevant part of the game logic, such as is_valid_blocker or resolve_combat.
 
@@ -662,6 +687,7 @@ attack_ability_handlers = {
 defeated_ability_handlers = {
     "explosive_toad": _explosive_toad_defeated_ability,
     "harpy_mother": _harpy_mother_defeated_ability,
+    "strange_barrel": _strange_barrel_defeated_ability,
 }
 # Map card IDs to specific ability functions for "Passive" effects
 passive_ability_handlers = {
