@@ -744,5 +744,11 @@ def get_effective_keywords(game_state: GameState, card_uuid: UUID) -> List[str]:
             for keyword in card.keywords:
                 if keyword in ["Hunter", "Sneaky", "Frenzy", "Poisonous"]:
                     effective_keywords.add(keyword)
+
+    # Snail Thrower passive ability
+    if "snail_thrower" in [other_card.id for other_card in player.play_area if other_card.uuid != card_uuid]:
+        if get_effective_power(game_state, card.uuid) <= 4:
+            effective_keywords.add("Hunter")
+            effective_keywords.add("Poisonous")
     
     return list(effective_keywords)

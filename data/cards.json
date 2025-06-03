@@ -225,6 +225,15 @@
     "ability_text": "Attack: If you control fewer creatures than your opponent, defeat a creature."
   },
   {
+    "id": "snail_thrower",
+    "name": "Snail Thrower",
+    "amount": 1,
+    "base_power": 1,
+    "keywords": ["Poisonous"],
+    "ability_type": "passive",
+    "ability_text": "Other allied creatures with power 4 or less have Hunter and Poisonous."
+  },
+  {
     "id": "tusked_extorter",
     "name": "Tusked Extorter",
     "amount": 2,
