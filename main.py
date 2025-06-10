@@ -17,24 +17,27 @@ def run_pvp_game():
     
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
     # Make a list of forced cards for testing purposes
-    forced_cards_1 = [card for card in all_cards_list if (
-        card.id == 'snail_thrower'
-        or card.id == 'urchin_hurler'
-    )]
+    # forced_cards_1 = [card for card in all_cards_list if (
+    #     card.id == 'snail_thrower'
+    #     or card.id == 'urchin_hurler'
+    # )]
     # forced_cards_2 = [card for card in all_cards_list if (
     #     card.id == 'lone_yeti'
     #     # or card.id == 'chameleon_sniper'
     # )]
 
+    deck_size = 10
+    hand_size = 5
+
     player1_id = "Human Player 1"
     player2_id = "Human Player 2"
     agents: Dict[str, BaseAgent] = {player1_id: HumanAgent(player1_id), player2_id: HumanAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
-                                         deck_size=5, hand_size=2, 
-                                         forced_cards_1=forced_cards_1,
+                                         deck_size=deck_size, hand_size=hand_size, 
+                                        #  forced_cards_1=forced_cards_1,
                                         #  forced_cards_2=forced_cards_2
                                          )
-    game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
+    game_engine = GameEngine(deck_size=deck_size, hand_size=hand_size, agents=agents)
 
     print("--- Starting Mindbug Game ---")
     
@@ -70,11 +73,11 @@ def run_pvai_game():
     player2_id = "AI Player"
     agents: Dict[str, BaseAgent] = {player1_id: HumanAgent(player1_id), player2_id: RandomAgent(player2_id)}
     game_state = GameState.initial_state(player1_id, player2_id, all_cards_list,
-                                         deck_size=5, hand_size=2, 
+                                         deck_size=10, hand_size=5, 
                                         #  forced_cards_1=forced_cards_1,
                                         #  forced_cards_2=forced_cards_2
                                          )
-    game_engine = GameEngine(deck_size=5, hand_size=2, agents=agents)
+    game_engine = GameEngine(deck_size=10, hand_size=5, agents=agents)
 
     print("--- Starting Mindbug Game ---")
     
@@ -98,9 +101,9 @@ def run_pvai_game():
     print(f"Winner: {game_state.winner_id}")
 
 def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> GameState:
-    # Suppress prints for AI vs AI games
-    sys.stdout = open(os.devnull, 'w')
-    sys.stderr = open(os.devnull, 'w')
+    # # Suppress prints for AI vs AI games
+    # sys.stdout = open(os.devnull, 'w')
+    # sys.stderr = open(os.devnull, 'w')
 
     current_dir = os.path.dirname(__file__)
     cards_json_path = os.path.join(current_dir, 'data', 'cards.json')
@@ -148,33 +151,33 @@ def run_aivai_game(deck_size: int = 5, hand_size: int = 2) -> GameState:
 
 
 if __name__ == "__main__":
-    # run_pvp_game()
+    run_pvai_game()
 
     # ----------------------
     # Uncomment the following lines to run AI vs AI games in parallel
     # ----------------------
 
-    num_games = 1000
-    deck_size = 10
-    hand_size = 5
-    args_list = [(deck_size, hand_size) for _ in range(num_games)]
+    # num_games = 1000
+    # deck_size = 10
+    # hand_size = 5
+    # args_list = [(deck_size, hand_size) for _ in range(num_games)]
 
-    # Run the games in parallel using multiprocessing
-    with mp.Pool() as pool:
-        results = pool.starmap(run_aivai_game, args_list)
+    # # Run the games in parallel using multiprocessing
+    # with mp.Pool() as pool:
+    #     results = pool.starmap(run_aivai_game, args_list)
 
-    # # Run the games sequentially for debugging
-    # results = [run_aivai_game(deck_size, hand_size) for _ in range(num_games)]
+    # # # Run the games sequentially for debugging
+    # # results = [run_aivai_game(deck_size, hand_size) for _ in range(num_games)]
 
-    # Re-enable prints
-    sys.stdout = sys.__stdout__
-    sys.stderr = sys.__stderr__
-    print(f"--- Completed {num_games} AI vs AI games ---")
+    # # Re-enable prints
+    # sys.stdout = sys.__stdout__
+    # sys.stderr = sys.__stderr__
+    # print(f"--- Completed {num_games} AI vs AI games ---")
     
-    # Count wins for each player
-    winners = [game_state.winner_id for game_state in results]
-    player1_wins = winners.count("Random Agent")
-    player2_wins = winners.count("Zero Agent")
+    # # Count wins for each player
+    # winners = [game_state.winner_id for game_state in results]
+    # player1_wins = winners.count("Random Agent")
+    # player2_wins = winners.count("Zero Agent")
 
-    print(f"Random Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
-    print(f"Zero Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")
+    # print(f"Random Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
+    # print(f"Zero Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")

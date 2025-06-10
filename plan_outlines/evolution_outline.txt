@@ -1,0 +1,376 @@
+Outline for Implementing an AI Agent with Evolutionary Algorithms
+
+Here's a breakdown of the implementation steps:
+1. Design Your AI Agent's "Genome" 🧬
+
+    What will be evolved? You need to decide how your AI makes decisions and what parameters of that decision-making process will be evolved. Common approaches include:
+        Rule-based System: A set of "if-then-else" rules. The evolutionary algorithm could evolve the conditions, actions, or priorities of these rules.
+        Heuristic Function: A function that scores possible moves. The evolutionary algorithm would evolve the weights or coefficients of different game state features used in this function. For example, score = w1 * (my_life_points - opponent_life_points) + w2 * (my_creatures_on_board - opponent_creatures_on_board) + w3 * (cards_in_hand) ...
+        Simple Neural Network: A small neural network where the inputs are features of the game state, and the output determines the action. The weights and biases of the network would be the genome.
+    Representation: How will you represent this genome in code? This is often a list or array of numbers (e.g., weights, rule parameters).
+
+2. Create the AI Agent Class
+
+    Create a new Python file (e.g., evolutionary_agent.py).
+    Define a class, let's call it EvolutionaryAgent, that inherits from BaseAgent (from base_agent.py).
+    Python
+
+    from src.agents.base_agent import BaseAgent
+    from src.models.game_state import GameState
+    from src.models.action import Action, CardChoiceRequest
+    from src.models.card import Card
+    from typing import List, Dict, Any # Add Any for genome type flexibility
+
+    class EvolutionaryAgent(BaseAgent):
+        def __init__(self, player_id: str, genome: List[Any]): # Genome type depends on your design
+            super().__init__(player_id)
+            self.genome = genome
+            # You might initialize other things based on the genome here
+            # e.g., if your genome represents weights for a heuristic function
+
+        def choose_action(self, game_state: GameState, possible_actions: List[Dict[str, Action | str]]) -> Action:
+            # This is where your AI's logic, guided by its genome, will go.
+            # It needs to evaluate possible_actions and select one.
+            # Example:
+            # best_action = None
+            # best_score = -float('inf') # Initialize with a very low score
+            # for action_dict in possible_actions:
+            #     action = action_dict['action']
+            #     # Simulate the action or evaluate its heuristic score based on self.genome
+            #     current_score = self._evaluate_action(game_state, action)
+            #     if current_score > best_score:
+            #         best_score = current_score
+            #         best_action = action
+            # if best_action is None and possible_actions: # Fallback if no action scored higher
+            #     # Potentially pick a random one or the first one as a fallback
+            #     import random
+            #     best_action = random.choice([a['action'] for a in possible_actions])
+            # elif not possible_actions:
+            #      raise ValueError("No possible actions available for EvolutionaryAgent.")
+            # return best_action
+            pass # Replace with actual implementation
+
+        def choose_cards(self, game_state: GameState, choice_request: CardChoiceRequest) -> List[Card]:
+            # Similar to choose_action, use the genome to decide which cards to pick.
+            # Example:
+            # best_cards = []
+            # if choice_request.options:
+            #     # Implement logic based on self.genome to evaluate and select cards
+            #     # This might involve scoring each card or combination of cards
+            #     # For simplicity, let's start with a random or heuristic choice
+            #     num_to_choose = random.randint(choice_request.min_choices, choice_request.max_choices)
+            #     best_cards = random.sample(choice_request.options, k=num_to_choose)
+            # return best_cards
+            pass # Replace with actual implementation
+
+        # Helper method (example)
+        # def _evaluate_action(self, game_state: GameState, action: Action) -> float:
+        #     # Use self.genome to calculate a score for the given action
+        #     # This might involve creating a hypothetical next_state and evaluating it
+        #     score = 0.0
+        #     # ... apply heuristic based on self.genome ...
+        #     return score
+
+        # def _evaluate_cards(self, game_state: GameState, cards: List[Card], purpose: str) -> float:
+        #     # Use self.genome to calculate a score for choosing these cards
+        #     score = 0.0
+        #     # ... apply heuristic based on self.genome ...
+        #     return score
+
+3. Implement the Decision-Making Logic (choose_action and choose_cards)
+
+    This is the core of your AI. Inside choose_action and choose_cards, you'll use the self.genome to make decisions.
+    For choose_action:
+        Iterate through possible_actions.
+        For each action, use your genome-defined strategy (rules, heuristic, neural net) to evaluate how "good" that action is.
+        Select the action with the highest evaluation.
+    For choose_cards:
+        Iterate through choice_request.options.
+        Use your genome-defined strategy to evaluate individual cards or combinations of cards based on the choice_request.purpose.
+        Select the card(s) that best fit the criteria, respecting min_choices and max_choices.
+
+4. Define the Fitness Function 💪
+
+    How do you measure "good"? The fitness function quantifies how well an agent (with a specific genome) performs.
+    Common metrics:
+        Win Rate: Play a certain number of games (e.g., against RandomAgent, a fixed ZeroAgent, or even other evolving agents) and calculate the percentage of games won.
+        Score Differential: If your game has a scoring mechanism beyond just winning/losing (e.g., life points remaining).
+        Game Length: Sometimes, winning quickly is preferred.
+    Implementation:
+    Python
+
+    # This would typically be outside your agent class, perhaps in a new 'evolution.py' file
+    from src.game_engine import GameEngine
+    from src.models.game_state import GameState
+    from src.models.card import Card # Assuming you have a way to load all cards
+    import json
+
+    # Load all card definitions
+    def load_all_cards(card_file_path="cards.json") -> List[Card]:
+        with open(card_file_path, 'r') as f:
+            card_data = json.load(f)
+        return [Card.from_dict(data) for data in card_data]
+
+    ALL_CARDS = load_all_cards() # Load this once
+
+    def calculate_fitness(genome: List[Any], num_games: int = 10) -> float:
+        agent_player_id = "EvoAgent"
+        opponent_player_id = "RandomOpponent"
+
+        agent = EvolutionaryAgent(player_id=agent_player_id, genome=genome)
+        # You can choose different opponents, e.g., RandomAgent, ZeroAgent, or another EvolutionaryAgent
+        from src.agents.random_agent import RandomAgent # Or ZeroAgent
+        opponent = RandomAgent(player_id=opponent_player_id)
+
+        agents = {agent_player_id: agent, opponent_player_id: opponent}
+        wins = 0
+
+        for i in range(num_games):
+            # Initialize GameState. Ensure ALL_CARDS is passed correctly.
+            # Adjust deck_size and hand_size as per your game's defaults
+            initial_game_state = GameState.initial_state(
+                player1_id=agent_player_id,
+                player2_id=opponent_player_id,
+                starting_deck=ALL_CARDS, # Pass the loaded cards
+                deck_size=10, # Or your game's default
+                hand_size=5   # Or your game's default
+            )
+            game_engine = GameEngine(agents=agents) # Pass agents to GameEngine
+
+            current_game_state = initial_game_state
+            game_turn = 0 # Add a turn limit to prevent infinite games
+            max_turns = 200 # Adjust as needed
+
+            while not current_game_state.is_game_over() and game_turn < max_turns:
+                active_player_id = current_game_state.active_player_id
+                current_agent = agents[active_player_id]
+
+                possible_actions = game_engine.get_valid_actions(current_game_state)
+
+                if not possible_actions: # No actions possible, game might be stuck or over
+                    # This case should ideally be handled by get_valid_actions setting game_over
+                    # print(f"Warning: No possible actions for {active_player_id}. Ending game.")
+                    if not current_game_state.is_game_over(): # If not already set as over
+                        current_game_state.game_over = True
+                        current_game_state.winner_id = current_game_state.inactive_player_id # Opponent wins
+                    break
+
+                chosen_action = current_agent.choose_action(current_game_state, possible_actions)
+                current_game_state = game_engine.apply_action(current_game_state, chosen_action)
+
+                # Handle card choices if the game engine requires them through the agent
+                # This part needs careful integration with how your GameEngine and GameRules
+                # trigger card choices (e.g., for abilities like Brain Fly, Compost Dragon)
+                # Your game_engine.apply_action or GameRules might call agent.choose_cards directly.
+
+                game_turn += 1
+
+            if game_turn >= max_turns and not current_game_state.is_game_over():
+                # print(f"Game {i+1} reached max turns. Considering it a draw or loss for the agent.")
+                # Decide how to score this: 0 wins, or some partial score.
+                pass
+
+            if current_game_state.is_game_over() and current_game_state.winner_id == agent_player_id:
+                wins += 1
+
+        return wins / num_games
+
+5. Implement the Evolutionary Algorithm
+
+This will also likely be in its own file (e.g., evolution.py or trainer.py).
+
+    a. Initialization:
+        Create an initial population of N agents, each with a randomly generated genome.
+    Python
+
+import random
+
+def create_random_genome(genome_length: int) -> List[float]: # Example if genome is list of floats
+    # Adjust based on your genome's structure and value ranges
+    return [random.uniform(-1.0, 1.0) for _ in range(genome_length)]
+
+population_size = 50
+genome_size = 20 # Example: number of weights in a heuristic function
+population = [create_random_genome(genome_size) for _ in range(population_size)]
+
+b. Evaluation:
+
+    For each genome in the current population, calculate its fitness using your calculate_fitness function.
+
+Python
+
+fitness_scores = [calculate_fitness(genome) for genome in population]
+
+c. Selection:
+
+    Choose which genomes will "reproduce" to create the next generation. Common methods:
+        Tournament Selection: Randomly pick a few genomes, and the one with the best fitness among them is selected. Repeat to get enough parents.
+        Roulette Wheel Selection: Genomes are selected with a probability proportional to their fitness.
+        Elitism: Directly carry over the top X% best genomes to the next generation unchanged to ensure good solutions aren't lost.
+
+Python
+
+# Example: Elitism + Tournament Selection
+def selection(population: List[List[Any]], fitness_scores: List[float], num_parents: int, elite_size: int) -> List[List[Any]]:
+    parents = []
+    # Elitism
+    sorted_population_with_fitness = sorted(zip(population, fitness_scores), key=lambda x: x[1], reverse=True)
+    for i in range(elite_size):
+        parents.append(sorted_population_with_fitness[i][0])
+
+    # Tournament Selection for the rest
+    num_to_select_via_tournament = num_parents - elite_size
+    tournament_size = 3 # Number of individuals in each tournament
+    for _ in range(num_to_select_via_tournament):
+        tournament_contenders_indices = random.sample(range(len(population)), tournament_size)
+        winner_index = -1
+        best_fitness_in_tournament = -float('inf')
+        for contender_idx in tournament_contenders_indices:
+            if fitness_scores[contender_idx] > best_fitness_in_tournament:
+                best_fitness_in_tournament = fitness_scores[contender_idx]
+                winner_index = contender_idx
+        parents.append(population[winner_index])
+    return parents
+
+d. Crossover (Recombination):
+
+    Create new "offspring" genomes by combining parts of two parent genomes. Common methods:
+        Single-Point Crossover: Pick a random point in the genome. Offspring gets genes from parent1 up to this point, and from parent2 after this point.
+        Multi-Point Crossover: Similar, but with multiple crossover points.
+        Uniform Crossover: For each gene, randomly pick which parent it comes from.
+
+Python
+
+def crossover(parent1: List[Any], parent2: List[Any]) -> Tuple[List[Any], List[Any]]:
+    # Example: Single-point crossover for list-based genomes
+    if len(parent1) != len(parent2) or len(parent1) < 2:
+        return parent1[:], parent2[:] # Or handle error
+
+    crossover_point = random.randint(1, len(parent1) - 1)
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+    return child1, child2
+
+e. Mutation:
+
+    Introduce small, random changes into the offspring genomes. This helps maintain diversity and explore new areas of the solution space.
+    The mutation rate is usually low.
+
+Python
+
+def mutate(genome: List[Any], mutation_rate: float = 0.05, mutation_strength: float = 0.1) -> List[Any]:
+    mutated_genome = genome[:]
+    for i in range(len(mutated_genome)):
+        if random.random() < mutation_rate:
+            # Example mutation: add a small random value (if genome is floats)
+            change = random.uniform(-mutation_strength, mutation_strength)
+            # Ensure this makes sense for your genome representation
+            if isinstance(mutated_genome[i], (int, float)):
+                mutated_genome[i] += change
+                # Optional: clamp values if they have specific ranges
+                # mutated_genome[i] = max(min_val, min(mutated_genome[i], max_val))
+    return mutated_genome
+
+f. Replacement / New Generation:
+
+    Create the new population for the next iteration. You might replace the entire old population with the new offspring (plus any elites).
+
+Python
+
+    # Inside your main training loop
+    # next_population = elites (from selection)
+    # while len(next_population) < population_size:
+    #     parent1, parent2 = select_two_parents_from_selected_parents(parents) # Need a way to pick pairs
+    #     child1, child2 = crossover(parent1, parent2)
+    #     next_population.append(mutate(child1, mutation_rate))
+    #     if len(next_population) < population_size:
+    #         next_population.append(mutate(child2, mutation_rate))
+    # population = next_population[:population_size] # Ensure correct size
+
+    g. Termination Condition:
+        Decide when to stop the evolution (e.g., after a fixed number of generations, if fitness plateaus, or a target fitness is reached).
+
+6. The Training Loop 🔄
+
+    Combine all the evolutionary algorithm steps into a loop that runs for a set number of generations.
+    Python
+
+    # In your main evolution/training script
+    num_generations = 100
+    population_size = 50
+    genome_size = 20 # Example
+    elite_size = int(0.1 * population_size) # Keep top 10%
+    mutation_rate = 0.1 # Adjust
+    num_games_for_fitness = 10 # Adjust
+
+    # 1. Initialization
+    current_population = [create_random_genome(genome_size) for _ in range(population_size)]
+
+    for generation in range(num_generations):
+        print(f"--- Generation {generation + 1} ---")
+
+        # 2. Evaluation
+        fitness_scores = [calculate_fitness(genome, num_games=num_games_for_fitness) for genome in current_population]
+
+        best_fitness_this_gen = max(fitness_scores)
+        avg_fitness_this_gen = sum(fitness_scores) / len(fitness_scores)
+        print(f"Best Fitness: {best_fitness_this_gen:.3f}, Avg Fitness: {avg_fitness_this_gen:.3f}")
+
+        # 3. Selection
+        # Ensure selection function can handle getting enough parents for crossover
+        # e.g., if crossover produces 2 children, you need population_size - elite_size children.
+        # So you might need (population_size - elite_size) / 2 pairs of parents if each pair produces 2 children.
+        num_parents_to_select = population_size # Or a bit more to allow choice
+        selected_parents = selection(current_population, fitness_scores, num_parents_to_select, elite_size)
+
+        # 4. Crossover & 5. Mutation (to form the next generation)
+        next_population = []
+
+        # Add elites directly
+        sorted_population_with_fitness = sorted(zip(current_population, fitness_scores), key=lambda x: x[1], reverse=True)
+        for i in range(elite_size):
+            next_population.append(sorted_population_with_fitness[i][0])
+
+        # Create offspring
+        num_offspring_needed = population_size - elite_size
+        current_offspring_count = 0
+        parent_idx = 0
+        while current_offspring_count < num_offspring_needed:
+            # Simple way to pick parent pairs from the selected_parents list
+            p1 = selected_parents[parent_idx % len(selected_parents)]
+            p2 = selected_parents[(parent_idx + 1) % len(selected_parents)] # Ensure different parents if possible
+            parent_idx += 2 # Move to next pair, or wrap around
+
+            child1, child2 = crossover(p1, p2)
+
+            next_population.append(mutate(child1, mutation_rate))
+            current_offspring_count +=1
+            if current_offspring_count < num_offspring_needed:
+                next_population.append(mutate(child2, mutation_rate))
+                current_offspring_count +=1
+
+        current_population = next_population[:population_size] # Ensure correct size
+
+    # After loop: Find the best genome from the final population
+    final_fitness_scores = [calculate_fitness(genome, num_games=num_games_for_fitness*2) for genome in current_population] # More games for final eval
+    best_overall_genome_info = sorted(zip(current_population, final_fitness_scores), key=lambda x: x[1], reverse=True)[0]
+    best_genome = best_overall_genome_info[0]
+    best_genome_fitness = best_overall_genome_info[1]
+
+    print("\n--- Training Complete ---")
+    print(f"Best Genome Fitness: {best_genome_fitness}")
+    # You can now save this best_genome and use it to create an EvolutionaryAgent for playing.
+    # print(f"Best Genome: {best_genome}")
+
+7. Testing and Refinement 🧪
+
+    Once you have a trained "best" genome, create an EvolutionaryAgent with it.
+    Test it against RandomAgent, ZeroAgent, and ideally, HumanAgent (yourself!).
+    Observe its behavior. Is it making sensible moves? Are there obvious flaws?
+    Based on observations, you might need to:
+        Tweak the genome representation.
+        Adjust the fitness function.
+        Modify the evolutionary algorithm parameters (population size, mutation rate, selection method, etc.).
+        Improve the decision-making logic within the agent.
+
+This is a comprehensive outline. Start simple, especially with the genome representation and the decision-making logic in your EvolutionaryAgent. Get a basic version working end-to-end, and then iterate and improve upon it. Good luck!
