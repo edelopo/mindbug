@@ -713,7 +713,8 @@ def _shield_bugs_passive_ability(game_state: GameState, shield_bugs_uuid: UUID,
     if affected_card.controller is None:
         raise ValueError("Affected card has no controller. Cannot resolve passive ability.")
     if (affected_card.controller.id == shield_bugs_card.controller.id
-        and affected_card.uuid != shield_bugs_uuid):
+        and affected_card.uuid != shield_bugs_uuid
+        and affected_card in affected_card.controller.play_area):
         return 1
     else:
         return 0

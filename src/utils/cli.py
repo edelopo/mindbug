@@ -8,7 +8,7 @@ import src.core.game_rules as GameRules
 import os
 
 class MindbugCLI:
-    width = 88  # Width of the display area
+    width = 140  # Width of the display area
 
     def get_effective_keyword_initials(self, game_state, card_uuid: UUID) -> str:
         """
@@ -68,7 +68,8 @@ class MindbugCLI:
         print(f"│ Hand ({len(active_player.hand)} cards):{' '*((self.width-2) - len(f'Hand ({len(active_player.hand)} cards):') - 1)}│")
         if active_player.hand:
             for i, card in enumerate(active_player.hand):
-                card_str = f"  {i+1}. {card.name:<25} (P: {card.power}, Kwrd: {self.get_string_keywords(card)})"
+                power_and_keywords = f"(P:{card.power:2d}, K: {self.get_string_keywords(card)})"
+                card_str = f"  {i+1}. {card.name:<25} {power_and_keywords:<20} {card.ability_text}"
                 print(f"│{card_str}{' '*(self.width - 2 - len(card_str))}│")
         else:
             print(f"│  (Empty){' '*(self.width-11)}│")
@@ -78,9 +79,11 @@ class MindbugCLI:
         print(f"│ Play Area ({len(active_player.play_area)} cards):{' '*((self.width-2) - len(f'Play Area ({len(active_player.play_area)} cards):') - 1)}│")
         if active_player.play_area:
             for i, card in enumerate(active_player.play_area):
-                exhausted = "⚠ EXHAUSTED" if card.is_exhausted else ""
+                exhausted = "⚠ EXHAUSTED " if card.is_exhausted else ""
                 eff_power = GameRules.get_effective_power(game_state, card.uuid)
-                card_str = f"  {i+1}. {card.name:<25} (P: {eff_power:2d}, Kwrd: {self.get_string_effective_keywords(game_state, card.uuid)}) {exhausted}"
+                eff_keywords = self.get_string_effective_keywords(game_state, card.uuid)
+                power_and_keywords = f"(P:{eff_power:2d}, K: {eff_keywords})"
+                card_str = f"  {i+1}. {card.name:<25} {power_and_keywords:<20} {exhausted}{card.ability_text}"
                 print(f"|{card_str}{' '*(self.width - 2 - len(card_str))}│")
         else:
             print(f"│  (Empty){' '*(self.width-11)}│")
@@ -103,7 +106,9 @@ class MindbugCLI:
             for i, card in enumerate(inactive_player.play_area):
                 exhausted = "⚠ EXHAUSTED" if card.is_exhausted else ""
                 eff_power = GameRules.get_effective_power(game_state, card.uuid)
-                card_str = f"  {i+1}. {card.name:<25} (P: {eff_power:2d}, Kwrd: {self.get_string_effective_keywords(game_state, card.uuid)}) {exhausted}"
+                eff_keywords = self.get_string_effective_keywords(game_state, card.uuid)
+                power_and_keywords = f"(P:{eff_power:2d}, K: {eff_keywords})"
+                card_str = f"  {i+1}. {card.name:<25} {power_and_keywords:<20} {exhausted} {card.ability_text}"
                 print(f"|{card_str}{' '*(self.width - 2 - len(card_str))}│")
         else:
             print(f"│  (Empty){' '*(self.width-11)}│")
@@ -169,8 +174,8 @@ class MindbugCLI:
         for i, card in enumerate(choice_request.options):
             exhausted = "⚠ EXHAUSTED" if card.is_exhausted else ""
             eff_power = GameRules.get_effective_power(game_state, card.uuid)
-            card_str = f"│  {i+1}. {card.name:<25} (P: {eff_power:2d}) {exhausted}"
-            print(f"{card_str}{' '*(69 - len(card_str))}│")
+            card_str = f"  {i+1}. {card.name:<25} (P:{eff_power:2d}) {exhausted}"
+            print(f"│{card_str}{' '*(self.width - 2 - len(card_str))}│")
         print(f"└{'─'*(self.width-2)}┘")
         
         # Selection instructions
