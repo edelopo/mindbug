@@ -24,7 +24,7 @@ class AttackAction(Action):
         self.attacking_card_uuid = attacking_card_uuid
 
     def __repr__(self):
-        return (f"AttackAction(Player: {self.player_id})")
+        return (f"AttackAction(Player: {self.player_id}, Attacking Card: {self.attacking_card_uuid})")
 
 class BlockAction(Action):
     def __init__(self, player_id: str, blocking_card_uuid: Optional[UUID] = None):
@@ -32,7 +32,7 @@ class BlockAction(Action):
         self.blocking_card_uuid = blocking_card_uuid # The card blocking, None if no block
 
     def __repr__(self):
-        return (f"BlockAction(Player: {self.player_id})")
+        return (f"BlockAction(Player: {self.player_id}, Blocking Card: {self.blocking_card_uuid})")
 
 class UseMindbugAction(Action):
     def __init__(self, player_id: str):
@@ -47,6 +47,22 @@ class PassMindbugAction(Action):
 
     def __repr__(self):
         return f"PassMindbugAction(Player: {self.player_id})"
+    
+class StealAction(Action):
+    def __init__(self, player_id: str, target_uuids: List[UUID]):
+        super().__init__(player_id)
+        self.target_uuids = target_uuids
+
+    def __repr__(self):
+        return (f"StealAction(Player: {self.player_id}, Targets: {self.target_uuids})")
+    
+class PlayFromDiscardAction(Action):
+    def __init__(self, player_id: str, card_uuid: UUID):
+        super().__init__(player_id)
+        self.card_uuid = card_uuid
+
+    def __repr__(self):
+        return (f"PlayFromDiscardAction(Player: {self.player_id}, Card: {self.card_uuid})")
 
 class CardChoiceRequest:
     def __init__(

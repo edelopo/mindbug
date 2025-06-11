@@ -1,11 +1,11 @@
 import random
 import copy
 from uuid import UUID
-from typing import List, Tuple, Dict
+from typing import List, Dict
 from src.models.game_state import GameState
 from src.models.card import Card
-from src.models.action import CardChoiceRequest
 from src.agents.base_agent import BaseAgent
+from src.models.action import CardChoiceRequest
 
 # --- Core Game Logic Functions ---
 
@@ -131,6 +131,8 @@ def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents:
         handler = play_ability_handlers.get(card_played.id)
         if handler:
             game_state = handler(copy.deepcopy(game_state), card_played_uuid, agents)
+    else:
+        game_state.pending_action = "end_turn"
     return game_state
 
 def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -174,6 +176,7 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents:
     # Player gains 2 life
     player.life_points += 2
     print(f"{player.id} gains 2 life points. New life: {player.life_points}")
+    game_state.pending_action = "end_turn"
 
     return game_state
 
@@ -186,7 +189,7 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
     player = card_played.controller
     opponent = game_state.get_opponent_of(player.id)
 
-    valid_targets = []
+    valid_targets: List[Card] = []
     for card in opponent.play_area:
         effective_power = get_effective_power(game_state, card.uuid)
         if effective_power >= 6:
@@ -194,27 +197,12 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
 
     if not valid_targets:
         print(f"No valid creatures with power 6 or more to take control of.")
+        game_state.pending_action = "end_turn"
         return game_state
     
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=player.id,
-        options=valid_targets,
-        min_choices=1,
-        max_choices=1,
-        purpose="steal",
-        prompt="Choose a creature with power 6 or more to STEAL."
-    )
-
-    # Ask the agent to choose
-    agent = agents[player.id]
-    chosen_card = agent.choose_cards(game_state, choice_request)[0]
-
-    # Steal the chosen card
-    opponent.play_area.remove(chosen_card)
-    player.play_area.append(chosen_card)
-    chosen_card.controller = player
-    print(f"{player.id} steals {chosen_card.name} from {opponent.id}.")
+    game_state.pending_action = "steal"
+    game_state._valid_targets = [card.uuid for card in valid_targets]
+    game_state._amount_of_targets = 1
 
     return game_state
 
@@ -226,9 +214,17 @@ def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents:
     
     player = card_played.controller
 
-    if not player.discard_pile:
+    valid_targets = [card.uuid for card in player.discard_pile]
+    if not valid_targets:
         print(f"{player.id} has no cards in discard pile to play.")
+        game_state.pending_action = "end_turn"
         return game_state
+    
+    game_state.pending_action = "play_from_discard"
+    game_state._valid_targets = valid_targets
+    game_state._amount_of_targets = 1
+
+    return game_state
 
     # Create a choice request
     choice_request = CardChoiceRequest(

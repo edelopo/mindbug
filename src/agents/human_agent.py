@@ -2,7 +2,7 @@ from src.agents.base_agent import BaseAgent
 from src.models.game_state import GameState
 from src.models.action import Action, CardChoiceRequest
 from src.models.card import Card
-from typing import List, Dict
+from typing import List, Dict, Any
 from src.utils.cli import MindbugCLI # Import the CLI
 
 class HumanAgent(BaseAgent):
@@ -10,7 +10,7 @@ class HumanAgent(BaseAgent):
         super().__init__(player_id)
         self.cli = MindbugCLI() # Initialize the CLI here
 
-    def choose_action(self, game_state: GameState, possible_actions: List[Dict[str, Action | str]]) -> Action:
+    def choose_action(self, game_state: GameState, possible_actions: List[Dict[str, Any]]) -> Action:
         """
         Human agent chooses an action by interacting with the CLI.
         """

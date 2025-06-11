@@ -1,11 +1,7 @@
 from typing import Dict, List, Optional
 import copy
 from src.models.game_state import GameState
-from src.models.action import (
-    Action, PlayCardAction, AttackAction,
-    UseMindbugAction, PassMindbugAction,
-    CardChoiceRequest
-)
+from src.models.action import *
 from src.models.card import Card
 import src.core.game_rules as GameRules
 from src.agents.base_agent import BaseAgent
@@ -33,23 +29,43 @@ class GameEngine:
             return game_state
 
         new_state = copy.deepcopy(game_state)
-
-        if new_state.phase == "mindbug_phase":
-            # Handle Mindbug response actions (UseMindbugAction, PassMindbugAction)
-            return self._handle_mindbug_response(new_state, action)
-        
-        # Normal turn actions
         if action.player_id != new_state.active_player_id:
-            print(f"Invalid action: It's not {action.player_id}'s turn.")
-            return new_state # Or raise an error
+                raise ValueError(f"Wrong active player: {action}.")
 
-        if isinstance(action, PlayCardAction):
-            return self._handle_play_card_action(new_state, action)
-        elif isinstance(action, AttackAction):
-            return self._handle_attack_action(new_state, action)
+        if new_state.pending_action == "mindbug":
+            if isinstance(action, UseMindbugAction) or isinstance(action, PassMindbugAction):
+                return self._handle_mindbug_response(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+        
+        elif new_state.pending_action == "play_or_attack":
+            if isinstance(action, PlayCardAction):
+                return self._handle_play_card_action(new_state, action)
+            elif isinstance(action, AttackAction):
+                return self._handle_attack_action(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+            
+        # elif new_state.pending_action == "block":
+        #     if isinstance(action, BlockAction):
+        #         return self._handle_block_action(new_state, action)
+        #     else:
+        #         raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+        
+        elif new_state.pending_action == "steal":
+            if isinstance(action, StealAction):
+                return self._handle_steal_action(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+        
+        elif new_state.pending_action == "play_from_discard":
+            if isinstance(action, PlayFromDiscardAction):
+                return self._handle_play_from_discard_action(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+
         else:
-            print(f"Unknown or invalid action type: {type(action)}")
-            return new_state
+            raise ValueError(f"Unknown pending action: {new_state.pending_action}. Cannot apply action {action}.")
     
     def lose_life(self, game_state: GameState, player_id: str, amount: int = 1) -> GameState:
         """A player loses life."""
@@ -80,20 +96,19 @@ class GameEngine:
                 card_to_play = card
                 break
         else:
-            print(f"Error: Card UUID '{card_to_play_uuid}' not found in {player.id}'s hand.")
-            return game_state # Invalid action, return original state
+            raise ValueError(f"Card with UUID {card_to_play_uuid} not found in {player.id}'s hand.")
             
         # 1. Remove card from hand
         player.play_card(card_to_play) # player.play_card removes it from hand and adds it to play_area.
         print(f"{player.id} plays {card_to_play.name}.")
 
-        # 2. Draw back to hand_size cards (Mindbug rule)
+        # 2. Draw back to hand_size cards
         while len(player.hand) < self.hand_size and player.deck:
             drawn_card = player.draw_card()
         
-        # 3. Opponent gets a chance to Mindbug (Crucial Mindbug mechanic!)
+        # 3. Opponent gets a chance to Mindbug
         game_state._pending_mindbug_card_uuid = card_to_play.uuid # Store the card being played for Mindbug decision
-        game_state.phase = "mindbug_phase" # Set phase to mindbug
+        game_state.pending_action = "mindbug" # Set phase to mindbug
         game_state.switch_active_player() # Switch to opponent for Mindbug decision
         # Store the card being played temporarily for Mindbug decision
         
@@ -101,6 +116,28 @@ class GameEngine:
         # The game loop will now wait for a UseMindbugAction or PassMindbugAction from inactive player.
         
         return game_state # State is now waiting for Mindbug response
+    
+    def _handle_play_from_discard_action(self, game_state: GameState, action: PlayFromDiscardAction) -> GameState:
+        """
+        Handles the action of playing a card from the discard pile.
+        """
+        player = game_state.get_active_player()
+        opponent = game_state.get_inactive_player()
+        card = GameRules.get_card_by_uuid(game_state, action.card_uuid)
+        
+        if card in player.discard_pile:
+            previous_owner = player
+        elif card in opponent.discard_pile:
+            previous_owner = opponent
+        else:
+            raise ValueError(f"Card with UUID {action.card_uuid} not found in either player's discard pile.")
+
+        previous_owner.discard_pile.remove(card)
+        player.play_area.append(card)
+        card.controller = player
+        game_state = GameRules.activate_play_ability(game_state, card.uuid, self.agents)
+
+        return game_state
 
     def _handle_mindbug_response(self, game_state: GameState, action: Action) -> GameState:
         opponent = game_state.get_active_player() # In mindbug phase, the "active" player is the opponent.
@@ -132,12 +169,8 @@ class GameEngine:
                 # 3. Activate the card's play ability for the opponent
                 game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
                 # Now we do NOT switch back to the original player, so that when the turn ends they go again.
-                
             else:
-                print(f"{opponent.id} tried to Mindbug but has no Mindbugs left.")
-                # Fall through to act as if they passed
-                game_state.switch_active_player() # Switch back to original player
-                game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
+                raise ValueError(f"{opponent.id} tried to use Mindbug but has no Mindbugs left.")
 
         elif isinstance(action, PassMindbugAction):
             print(f"{opponent.id} passes on Mindbugging {played_card.name}.")
@@ -145,7 +178,9 @@ class GameEngine:
             game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
 
         game_state._pending_mindbug_card_uuid = None # Clear pending Mindbug state
-        game_state = self.end_turn(game_state) # End turn after Mindbug resolution
+        if game_state.pending_action == "end_turn":
+            game_state = self.end_turn(game_state) # End turn after Mindbug resolution
+        
         return game_state
 
     def _handle_attack_action(self, game_state: GameState, action: AttackAction) -> GameState:
@@ -261,6 +296,62 @@ class GameEngine:
             game_state = self.end_turn(game_state)
         return game_state
 
+    # def _handle_block_action(self, game_state: GameState, action: BlockAction) -> GameState:
+    #     """
+    #     Handles the blocking action when a player chooses to block an attack.
+    #     """
+    #     blocking_player = game_state.get_active_player()
+    #     attacking_player = game_state.get_inactive_player()
+        
+    #     if not game_state._pending_attack_card_uuid:
+    #         raise ValueError("No pending attack card to block.")
+
+    #     attacking_card_uuid = game_state._pending_attack_card_uuid
+    #     attacking_card = GameRules.get_card_by_uuid(game_state, attacking_card_uuid)
+
+    #     if action.blocking_card_uuid:
+    #         # If a blocking card is specified, find it in the player's play area
+    #         blocking_card_uuid = action.blocking_card_uuid
+    #         blocking_card = GameRules.get_card_by_uuid(game_state, blocking_card_uuid)
+    #         if blocking_card not in blocking_player.play_area:
+    #             raise ValueError(f"Blocking card {blocking_card.name} not found in {blocking_player.id}'s play area.")
+    #         print(f"{blocking_player.id} blocks {attacking_card.name} with {blocking_card.name}.")
+    #     else:
+    #         # No blocking card specified, so no block occurs
+    #         print(f"{blocking_player.id} does not block the attack from {attacking_player.id}.")
+    #         return self.lose_life(game_state, attacking_player.id)
+        
+    def _handle_steal_action(self, game_state: GameState, action: StealAction) -> GameState:
+        """
+        Handles the stealing action when a player chooses to steal cards from their opponent.
+        """
+        stealing_player = game_state.get_active_player()
+        target_player = game_state.get_inactive_player()
+
+        if action.player_id != stealing_player.id:
+            raise ValueError(f"Action player {action.player_id} is not the active player {stealing_player.id}.")
+
+        for card_uuid in action.target_uuids:
+            if card_uuid not in [card.uuid for card in target_player.play_area]:
+                raise ValueError(f"Target card with UUID {card_uuid} not found in {target_player.id}'s play area.")
+
+            target_card = GameRules.get_card_by_uuid(game_state, card_uuid)
+            # 1. Remove the card from the target player's play area
+            target_player.play_area.remove(target_card)
+            # 2. Add the card to the stealing player's play area
+            stealing_player.play_area.append(target_card)
+            target_card.controller = stealing_player
+            print(f"{stealing_player.id} steals {target_card.name} from {target_player.id}.")
+
+        # Clear the auxiliary variables used for stealing
+        game_state._valid_targets = None
+        game_state._amount_of_targets = None
+
+        game_state = self.end_turn(game_state)
+        return game_state
+
+    # --- End Turn ---
+
     def end_turn(self, game_state: GameState) -> GameState:
         # Check if game is over before ending turn
         if game_state.is_game_over():
@@ -269,25 +360,25 @@ class GameEngine:
         print(f"Turn {game_state.turn_count} ended.\n")
         game_state.switch_active_player() # Switch active player
         game_state.turn_count += 1 # Increment turn count
-        game_state.phase = "play_phase"
+        game_state.pending_action = "play_or_attack" # Go back to play/attack phase
 
         return game_state
 
     # --- Check of possible actions ---
 
-    def get_valid_actions(self, game_state: GameState) -> List[Dict[str, Action | str]]:
+    def get_valid_actions(self, game_state: GameState) -> List[Dict[str, Action | str | List[str]]]:
         """
         Determines all legal actions the active player can take in the current game state.
         This is critical for AI and human input validation.
         """
-        valid_actions: List[Dict[str, Action | str]] = []
+        valid_actions = []
         active_player = game_state.get_active_player()
         inactive_player = game_state.get_inactive_player()
 
         if game_state.game_over:
             return []
 
-        if game_state.phase == "mindbug_phase":
+        if game_state.pending_action == "mindbug":
             # During the mindbug phase, the active player must choose whether to use a mindbug or not.
             if active_player.mindbugs:
                 if game_state._pending_mindbug_card_uuid:
@@ -298,9 +389,8 @@ class GameEngine:
                 valid_actions.append({'action': UseMindbugAction(active_player.id),
                                       'card_name': card_name})
             valid_actions.append({'action': PassMindbugAction(active_player.id)})
-            return valid_actions
 
-        elif game_state.phase == "play_phase":
+        elif game_state.pending_action == "play_or_attack":
             # During the play phase, the active player can play a card or attack with a card on the play area.
             for card in active_player.hand:
                 valid_actions.append({'action': PlayCardAction(active_player.id, card.uuid),
@@ -308,9 +398,45 @@ class GameEngine:
             for card in active_player.play_area:
                 valid_actions.append({'action': AttackAction(active_player.id, card.uuid),
                                       'card_name': card.name})
+                
+        elif game_state.pending_action == "block":
+            pass
+
+        elif game_state.pending_action == "steal":
+            # During the steal phase, the active player can choose to steal cards among the valid targets.
+            if not game_state._valid_targets:
+                raise ValueError("No valid targets for stealing action.")
+            if not game_state._amount_of_targets:
+                raise ValueError("No amount of targets specified for stealing action.")
             
-        elif game_state.phase == "end_turn_phase":
-            raise ValueError("Invalid game phase: end_turn_phase. This should not be directly queried for actions.")
+            valid_targets = game_state._valid_targets
+            if isinstance(game_state._amount_of_targets, int):
+                min_size = max_size = min(game_state._amount_of_targets, len(valid_targets))
+            else:
+                min_size = min(game_state._amount_of_targets[0], len(valid_targets))
+                max_size = min(game_state._amount_of_targets[1], len(valid_targets))
+
+            valid_target_lists = self.list_of_subsets(valid_targets, min_size=min_size, max_size=max_size)
+            for target_list in valid_target_lists:
+                valid_actions.append({'action': StealAction(active_player.id, target_list),
+                                      'target_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
+            
+        elif game_state.pending_action == "play_from_discard":
+            # During the play from discard phase, the active player can play cards 
+            # either from their discard pile or from the opponent's discard pile.
+            if not game_state._valid_targets:
+                raise ValueError("No valid targets for stealing action.")
+            if not game_state._amount_of_targets:
+                raise ValueError("No amount of targets specified for stealing action.")
+            if game_state._amount_of_targets != 1:
+                raise NotImplementedError("Currently only one card can be played from discard at a time.")
+            
+            for card_uuid in game_state._valid_targets:
+                valid_actions.append({'action': PlayFromDiscardAction(active_player.id, card_uuid),
+                                      'card_name': GameRules.get_card_by_uuid(game_state, card_uuid).name})
+
+        else:
+            raise ValueError(f"Unknown pending action: {game_state.pending_action}. Cannot determine valid actions.")
 
         # General rule: a player must take an action. If they cannot, they lose.
         if not valid_actions and not game_state.game_over:
@@ -320,6 +446,19 @@ class GameEngine:
             return [] # No valid actions
 
         return valid_actions
+    
+    # --- Helper functions ---
+    
+    @staticmethod
+    def list_of_subsets(original_list: List, min_size: int, max_size: int) -> List[List]:
+        """
+        Generates all subsets of the original list with sizes between min_size and max_size.
+        """
+        from itertools import combinations
+        subsets = []
+        for size in range(min_size, max_size + 1):
+            subsets.extend(combinations(original_list, size))
+        return [list(subset) for subset in subsets]
     
     # --- Play a full game and return the history ---
 
@@ -334,7 +473,7 @@ class GameEngine:
 
         logs = {}
 
-        # Make a list of forced cards for testing purposes
+        # Make a list of forced cards (for testing purposes)
         p1_forced_cards = []
         for card_id in p1_forced_card_ids:
             for card in self.all_cards:
@@ -358,7 +497,7 @@ class GameEngine:
         game_state = GameState.initial_state(
             player1_id=player1_id,
             player2_id=player2_id,
-            starting_deck=self.all_cards,
+            all_cards=self.all_cards,
             deck_size=self.deck_size,
             hand_size=self.hand_size,
             p1_forced_cards=p1_forced_cards,

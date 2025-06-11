@@ -2,7 +2,7 @@ from src.agents.base_agent import BaseAgent
 from src.models.game_state import GameState
 from src.models.action import Action, CardChoiceRequest
 from src.models.card import Card
-from typing import List, Dict
+from typing import List, Dict, Any
 import random
 
 class RandomAgent(BaseAgent):
@@ -37,7 +37,7 @@ class ZeroAgent(BaseAgent):
     def __init__(self, player_id: str):
         super().__init__(player_id)
 
-    def choose_action(self, game_state: GameState, possible_actions: List[Dict[str, Action | str]]) -> Action:
+    def choose_action(self, game_state: GameState, possible_actions: List[Dict[str, Any]]) -> Action:
         """
         Zero agent always chooses the first option.
         """

@@ -28,8 +28,8 @@ def run_pvp_game():
     print("--- Starting Mindbug Game ---")
     
     game_engine.play_game(
-        p1_forced_card_ids=[],
-        p2_forced_card_ids=[]
+        p1_forced_card_ids=['tusked_extorter'],
+        p2_forced_card_ids=['brain_fly', 'compost_dragon']
     )
 
     print("\n--- Game Finished ---")

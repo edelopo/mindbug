@@ -48,7 +48,7 @@ class MindbugCLI:
 
         # Game header with turn info
         print("\n" + "╔" + "═"*(self.width-2) + "╗")
-        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PHASE: ' + game_state.phase.upper():^{self.width-2}}║")
+        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PHASE: ' + game_state.pending_action.upper():^{self.width-2}}║")
         print("╚" + "═"*(self.width-2) + "╝")
 
         # Active player indicator
@@ -127,16 +127,22 @@ class MindbugCLI:
                 return f"Attack"
             elif isinstance(action, BlockAction):
                 return f"Block"
+            elif isinstance(action, StealAction):
+                return "Steal"
             elif isinstance(action, UseMindbugAction):
                 return "Use Mindbug"
             elif isinstance(action, PassMindbugAction):
                 return "Pass Mindbug"
+            elif isinstance(action, PlayFromDiscardAction):
+                return "Play from Discard"
             else:
                 return "Unknown Action"
 
         for i, action in enumerate(possible_actions):
             if 'card_name' in action.keys():
-                print(f"{i + 1}. {get_action_string(action['action'])} - Card: {action['card_name']}")
+                print(f"{i + 1}. {get_action_string(action['action'])} - {action['card_name']}")
+            elif 'target_names' in action.keys():
+                print(f"{i + 1}. {get_action_string(action['action'])} - {action['target_names']}")
             else:
                 print(f"{i + 1}. {get_action_string(action['action'])}")
 
