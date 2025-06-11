@@ -122,11 +122,11 @@ class MindbugCLI:
 
         def get_action_string(action: Action | str) -> str:
             if isinstance(action, PlayCardAction):
-                return f"Play"
+                return "Play"
             elif isinstance(action, AttackAction):
-                return f"Attack"
+                return "Attack"
             elif isinstance(action, BlockAction):
-                return f"Block"
+                return "Block"
             elif isinstance(action, StealAction):
                 return "Steal"
             elif isinstance(action, UseMindbugAction):
@@ -135,14 +135,16 @@ class MindbugCLI:
                 return "Pass Mindbug"
             elif isinstance(action, PlayFromDiscardAction):
                 return "Play from Discard"
+            elif isinstance(action, DiscardAction):
+                return "Discard"
             else:
                 return "Unknown Action"
 
         for i, action in enumerate(possible_actions):
             if 'card_name' in action.keys():
                 print(f"{i + 1}. {get_action_string(action['action'])} - {action['card_name']}")
-            elif 'target_names' in action.keys():
-                print(f"{i + 1}. {get_action_string(action['action'])} - {action['target_names']}")
+            elif 'card_names' in action.keys():
+                print(f"{i + 1}. {get_action_string(action['action'])} - {action['card_names']}")
             else:
                 print(f"{i + 1}. {get_action_string(action['action'])}")
 

@@ -64,6 +64,12 @@ class GameEngine:
             else:
                 raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
 
+        elif new_state.pending_action == "discard":
+            if isinstance(action, DiscardAction):
+                return self._handle_discard_action(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+
         else:
             raise ValueError(f"Unknown pending action: {new_state.pending_action}. Cannot apply action {action}.")
     
@@ -178,9 +184,7 @@ class GameEngine:
             game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
 
         game_state._pending_mindbug_card_uuid = None # Clear pending Mindbug state
-        if game_state.pending_action == "end_turn":
-            game_state = self.end_turn(game_state) # End turn after Mindbug resolution
-        
+
         return game_state
 
     def _handle_attack_action(self, game_state: GameState, action: AttackAction) -> GameState:
@@ -331,23 +335,46 @@ class GameEngine:
         if action.player_id != stealing_player.id:
             raise ValueError(f"Action player {action.player_id} is not the active player {stealing_player.id}.")
 
-        for card_uuid in action.target_uuids:
+        for card_uuid in action.card_uuids:
             if card_uuid not in [card.uuid for card in target_player.play_area]:
-                raise ValueError(f"Target card with UUID {card_uuid} not found in {target_player.id}'s play area.")
+                raise ValueError(f"Card with UUID {card_uuid} not found in {target_player.id}'s play area.")
 
-            target_card = GameRules.get_card_by_uuid(game_state, card_uuid)
+            card = GameRules.get_card_by_uuid(game_state, card_uuid)
             # 1. Remove the card from the target player's play area
-            target_player.play_area.remove(target_card)
+            target_player.play_area.remove(card)
             # 2. Add the card to the stealing player's play area
-            stealing_player.play_area.append(target_card)
-            target_card.controller = stealing_player
-            print(f"{stealing_player.id} steals {target_card.name} from {target_player.id}.")
+            stealing_player.play_area.append(card)
+            card.controller = stealing_player
+            print(f"{stealing_player.id} steals {card.name} from {target_player.id}.")
 
         # Clear the auxiliary variables used for stealing
         game_state._valid_targets = None
         game_state._amount_of_targets = None
 
-        game_state = self.end_turn(game_state)
+        game_state.pending_action = "finish_action"
+        return game_state
+    
+    def _handle_discard_action(self, game_state: GameState, action: DiscardAction) -> GameState:
+        """
+        Handles the discard action when a player has to discard a card.
+        """
+        player = game_state.get_active_player()
+        if action.player_id != player.id:
+            raise ValueError(f"Action player {action.player_id} is not the active player {player.id}.")
+        
+        for card_uuid in action.card_uuids:
+            if card_uuid not in [card.uuid for card in player.hand]:
+                raise ValueError(f"Card with UUID {card_uuid} not found in {player.id}'s hand.")
+
+            card = GameRules.get_card_by_uuid(game_state, card_uuid)
+            player.discard_card(card)
+            print(f"{player.id} discards {card.name}.")
+
+        # Clear the auxiliary variables used for discarding
+        game_state._valid_targets = None
+        game_state._amount_of_targets = None
+
+        game_state.pending_action = "finish_action"
         return game_state
 
     # --- End Turn ---
@@ -419,7 +446,26 @@ class GameEngine:
             valid_target_lists = self.list_of_subsets(valid_targets, min_size=min_size, max_size=max_size)
             for target_list in valid_target_lists:
                 valid_actions.append({'action': StealAction(active_player.id, target_list),
-                                      'target_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
+                                      'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
+                
+        elif game_state.pending_action == "discard":
+            # During the discard phase, the active player can choose which cards from hand to discard.
+            if not game_state._valid_targets:
+                raise ValueError("No valid targets for stealing action.")
+            if not game_state._amount_of_targets:
+                raise ValueError("No amount of targets specified for stealing action.")
+            
+            valid_targets = game_state._valid_targets
+            if isinstance(game_state._amount_of_targets, int):
+                min_size = max_size = min(game_state._amount_of_targets, len(valid_targets))
+            else:
+                min_size = min(game_state._amount_of_targets[0], len(valid_targets))
+                max_size = min(game_state._amount_of_targets[1], len(valid_targets))
+
+            valid_target_lists = self.list_of_subsets(valid_targets, min_size=min_size, max_size=max_size)
+            for target_list in valid_target_lists:
+                valid_actions.append({'action': DiscardAction(active_player.id, target_list),
+                                      'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
             
         elif game_state.pending_action == "play_from_discard":
             # During the play from discard phase, the active player can play cards 
@@ -513,6 +559,12 @@ class GameEngine:
         }
 
         while not game_state.game_over:
+            if game_state.pending_action == "finish_action":
+                if game_state._switch_active_player_back:
+                    game_state.switch_active_player()
+                game_state = self.end_turn(game_state)
+                continue
+
             active_player_id = game_state.active_player_id
             active_agent = self.agents[active_player_id]
 

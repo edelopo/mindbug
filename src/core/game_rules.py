@@ -171,12 +171,12 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents:
     card_played = get_card_by_uuid(game_state, card_uuid)
     player = card_played.controller
     if player is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
 
     # Player gains 2 life
     player.life_points += 2
     print(f"{player.id} gains 2 life points. New life: {player.life_points}")
-    game_state.pending_action = "end_turn"
+    game_state.pending_action = "finish_action"
 
     return game_state
 
@@ -184,7 +184,7 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
     """Brain Fly's 'Play' effect: Take control of a creature with power 6 or more."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
     opponent = game_state.get_opponent_of(player.id)
@@ -197,7 +197,7 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
 
     if not valid_targets:
         print(f"No valid creatures with power 6 or more to take control of.")
-        game_state.pending_action = "end_turn"
+        game_state.pending_action = "finish_action"
         return game_state
     
     game_state.pending_action = "steal"
@@ -210,14 +210,14 @@ def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents:
     """Compost Dragon's 'Play' effect: Play a card from your discard pile."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
 
     valid_targets = [card.uuid for card in player.discard_pile]
     if not valid_targets:
         print(f"{player.id} has no cards in discard pile to play.")
-        game_state.pending_action = "end_turn"
+        game_state.pending_action = "finish_action"
         return game_state
     
     game_state.pending_action = "play_from_discard"
@@ -226,58 +226,24 @@ def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents:
 
     return game_state
 
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=player.id,
-        options=player.discard_pile,
-        min_choices=1,
-        max_choices=1,
-        purpose="play",
-        prompt="Choose a card from your discard pile to PLAY."
-    )
-
-    # Ask the agent to choose
-    agent = agents[player.id]
-    chosen_card = agent.choose_cards(game_state, choice_request)[0]
-
-    # Move the chosen card from discard pile to play area
-    player.discard_pile.remove(chosen_card)
-    player.play_area.append(chosen_card)
-    chosen_card.controller = player
-    print(f"{player.id} plays {chosen_card.name} from their discard pile.")
-    game_state = activate_play_ability(game_state, chosen_card.uuid, agents)
-
-    return game_state
-
 def _ferret_bomber_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
     """Ferret Bomber's 'Play' effect: The opponent discards two cards."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     opponent = game_state.get_opponent_of(card_played.controller.id)
 
     if not opponent.hand:
         print(f"{opponent.id} has no cards in hand, cannot discard.")
+        game_state.pending_action = "finish_action"
         return game_state
 
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=opponent.id,
-        options=opponent.hand,
-        min_choices=min(2, len(opponent.hand)),
-        max_choices=min(2, len(opponent.hand)),
-        purpose="discard",
-        prompt="Choose two cards to DISCARD."
-    )
-
-    # Ask the agent to choose
-    agent = agents[opponent.id]
-    chosen_cards = agent.choose_cards(game_state, choice_request)
-
-    for card in chosen_cards:
-        opponent.discard_card(card)
-        print(f"{opponent.id} discards {card.name} due to Ferret Bomber.")
+    game_state.pending_action = "discard"
+    game_state.switch_active_player()
+    game_state._switch_active_player_back = True
+    game_state._valid_targets = [card.uuid for card in opponent.hand]
+    game_state._amount_of_targets = 2
 
     return game_state
 
@@ -285,7 +251,7 @@ def _giraffodile_play_ability(game_state: GameState, card_uuid: UUID, agents: Di
     """Giraffodile's 'Play' effect: Draw your entire discard pile."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
 
@@ -306,7 +272,7 @@ def _grave_robber_play_ability(game_state: GameState, card_uuid: UUID, agents: D
     """Grave Robber's 'Play' effect: Play a card from the opponent's discard pile."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
     opponent = game_state.get_opponent_of(player.id)
@@ -342,7 +308,7 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
     """Kangasaurus Rex's 'Play' effect: Defeat all enemy creatures with power 4 or less.."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     opponent = game_state.get_opponent_of(card_played.controller.id)
     for card in opponent.play_area[:]: # We need to slice the list to avoid modifying it while iterating
@@ -356,7 +322,7 @@ def _killer_bee_play_ability(game_state: GameState, card_uuid: UUID, agents: Dic
     """Killer Bee's 'Play' effect: The opponent loses a life point."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
     opponent = game_state.get_opponent_of(player.id)
@@ -376,7 +342,7 @@ def _mysterious_mermaid_play_ability(game_state: GameState, card_uuid: UUID, age
     """Mysterious Mermaid's 'Play' effect: Set your life points equal to the opponent's."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
     opponent = game_state.get_opponent_of(player.id)
@@ -391,7 +357,7 @@ def _tiger_squirrel_play_ability(game_state: GameState, card_uuid: UUID, agents:
     """Tiger Squirrel's 'Play' effect: Defeat an enemy creature with power 7 or more."""
     card_played = get_card_by_uuid(game_state, card_uuid)
     if card_played.controller is None:
-        raise ValueError("Card played has no controller. Cannot resolve play ability.")
+        raise ValueError("Card played {card_uuid} has no controller. Cannot resolve play ability.")
     
     player = card_played.controller
     opponent = game_state.get_opponent_of(player.id)

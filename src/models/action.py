@@ -49,12 +49,12 @@ class PassMindbugAction(Action):
         return f"PassMindbugAction(Player: {self.player_id})"
     
 class StealAction(Action):
-    def __init__(self, player_id: str, target_uuids: List[UUID]):
+    def __init__(self, player_id: str, card_uuids: List[UUID]):
         super().__init__(player_id)
-        self.target_uuids = target_uuids
+        self.card_uuids = card_uuids
 
     def __repr__(self):
-        return (f"StealAction(Player: {self.player_id}, Targets: {self.target_uuids})")
+        return (f"StealAction(Player: {self.player_id}, Cards: {self.card_uuids})")
     
 class PlayFromDiscardAction(Action):
     def __init__(self, player_id: str, card_uuid: UUID):
@@ -63,6 +63,14 @@ class PlayFromDiscardAction(Action):
 
     def __repr__(self):
         return (f"PlayFromDiscardAction(Player: {self.player_id}, Card: {self.card_uuid})")
+    
+class DiscardAction(Action):
+    def __init__(self, player_id: str, card_uuids: List[UUID]):
+        super().__init__(player_id)
+        self.card_uuids = card_uuids
+
+    def __repr__(self):
+        return (f"DiscardAction(Player: {self.player_id}, Cards: {self.card_uuids})")
 
 class CardChoiceRequest:
     def __init__(

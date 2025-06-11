@@ -27,6 +27,7 @@ class GameState:
         self._frenzy_active: bool = False
         self._valid_targets: Optional[List[UUID]] = None
         self._amount_of_targets: Optional[int | Tuple[int, int]] = None
+        self._switch_active_player_back: bool = False
 
     @classmethod
     def initial_state(cls,
