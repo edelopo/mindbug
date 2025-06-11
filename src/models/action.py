@@ -71,6 +71,14 @@ class DiscardAction(Action):
 
     def __repr__(self):
         return (f"DiscardAction(Player: {self.player_id}, Cards: {self.card_uuids})")
+    
+class DefeatAction(Action):
+    def __init__(self, player_id: str, card_uuids: List[UUID]):
+        super().__init__(player_id)
+        self.card_uuids = card_uuids
+
+    def __repr__(self):
+        return (f"DefeatAction(Player: {self.player_id}, Cards: {self.card_uuids})")
 
 class CardChoiceRequest:
     def __init__(

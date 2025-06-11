@@ -48,11 +48,11 @@ class MindbugCLI:
 
         # Game header with turn info
         print("\n" + "╔" + "═"*(self.width-2) + "╗")
-        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PHASE: ' + game_state.pending_action.upper():^{self.width-2}}║")
+        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PENDING ACTION: ' + game_state.pending_action.upper():^{self.width-2}}║")
         print("╚" + "═"*(self.width-2) + "╝")
 
         # Active player indicator
-        print(f"\n▶ {active_player.id}'s TURN")
+        print(f"\n▶ {active_player.id} IS THE ACTIVE PLAYER ◀")
 
         # Active player's board
         print(f"\n┌{'─'*(self.width-2)}┐")
@@ -137,6 +137,8 @@ class MindbugCLI:
                 return "Play from Discard"
             elif isinstance(action, DiscardAction):
                 return "Discard"
+            elif isinstance(action, DefeatAction):
+                return "Defeat"
             else:
                 return "Unknown Action"
 

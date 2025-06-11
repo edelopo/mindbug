@@ -28,8 +28,8 @@ def run_pvp_game():
     print("--- Starting Mindbug Game ---")
     
     game_engine.play_game(
-        p1_forced_card_ids=['ferret_bomber'],
-        p2_forced_card_ids=[]
+        p1_forced_card_ids=['elephantopus', 'tusked_extorter'],
+        p2_forced_card_ids=['tiger_squirrel']
     )
 
     print("\n--- Game Finished ---")
@@ -100,10 +100,10 @@ if __name__ == "__main__":
     # sys.stderr = sys.__stderr__
     # print(f"--- Completed {num_games} AI vs AI games ---")
     
-    # # Count wins for each player
-    # winners = [game_state.winner_id for game_state in results]
-    # player1_wins = winners.count("Random Agent")
-    # player2_wins = winners.count("Zero Agent")
+    # # # Count wins for each player
+    # # winners = [game_state.winner_id for game_state in results]
+    # # player1_wins = winners.count("Random Agent")
+    # # player2_wins = winners.count("Zero Agent")
 
-    # print(f"Random Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
-    # print(f"Zero Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")
+    # # print(f"Random Agent wins: {player1_wins} ({player1_wins/num_games:.1%})")
+    # # print(f"Zero Agent wins: {player2_wins} ({player2_wins/num_games:.1%})")

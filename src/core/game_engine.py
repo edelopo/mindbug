@@ -69,6 +69,12 @@ class GameEngine:
                 return self._handle_discard_action(new_state, action)
             else:
                 raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+            
+        elif new_state.pending_action == "defeat":
+            if isinstance(action, DefeatAction):
+                return self._handle_defeat_action(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
 
         else:
             raise ValueError(f"Unknown pending action: {new_state.pending_action}. Cannot apply action {action}.")
@@ -141,6 +147,7 @@ class GameEngine:
         previous_owner.discard_pile.remove(card)
         player.play_area.append(card)
         card.controller = player
+        print(f"{player.id} plays {card.name} from {previous_owner.id}'s discard pile.")
         game_state = GameRules.activate_play_ability(game_state, card.uuid, self.agents)
 
         return game_state
@@ -149,18 +156,15 @@ class GameEngine:
         opponent = game_state.get_active_player() # In mindbug phase, the "active" player is the opponent.
         player = game_state.get_inactive_player() # The player who originally played the card.
         # Get the card pending Mindbug response
-        played_card = None
-        for card in player.play_area:
-            if card.uuid == game_state._pending_mindbug_card_uuid:
-                played_card = card
-                break
+        if game_state._pending_mindbug_card_uuid:
+            played_card = GameRules.get_card_by_uuid(game_state, game_state._pending_mindbug_card_uuid)
         else:
-            print(f"Invalid Mindbug response: No played card found for UUID {game_state._pending_mindbug_card_uuid}.")
-            return game_state
+            raise ValueError("No pending Mindbug card UUID found in game state.")
 
+        if not played_card:
+            raise ValueError("No played card found for Mindbug response.")
         if action.player_id != opponent.id:
-            print(f"Invalid Mindbug response: Not {opponent.id}'s turn to respond.")
-            return game_state
+            raise ValueError(f"Action player {action.player_id} is not the active player {opponent.id} during Mindbug phase.")
         
         if isinstance(action, UseMindbugAction):
             if opponent.mindbugs:
@@ -324,6 +328,25 @@ class GameEngine:
     #         # No blocking card specified, so no block occurs
     #         print(f"{blocking_player.id} does not block the attack from {attacking_player.id}.")
     #         return self.lose_life(game_state, attacking_player.id)
+
+    def _handle_defeat_action(self, game_state: GameState, action: DefeatAction) -> GameState:
+        """
+        Handles the defeat action when a player chooses to defeat cards from their opponent.
+        """
+        player = game_state.get_active_player()
+        opponent = game_state.get_inactive_player()
+
+        if action.player_id != player.id:
+            raise ValueError(f"Action player {action.player_id} is not the active player {player.id}.")
+
+        game_state = GameRules.defeat(game_state, action.card_uuids, self.agents)            
+
+        # Clear the auxiliary variables used for defeating
+        game_state._valid_targets = None
+        game_state._amount_of_targets = None
+
+        game_state.pending_action = "finish_action"
+        return game_state
         
     def _handle_steal_action(self, game_state: GameState, action: StealAction) -> GameState:
         """
@@ -453,7 +476,7 @@ class GameEngine:
             if not game_state._valid_targets:
                 raise ValueError("No valid targets for stealing action.")
             if not game_state._amount_of_targets:
-                raise ValueError("No amount of targets specified for stealing action.")
+                raise ValueError("No amount of targets specified for discard action.")
             
             valid_targets = game_state._valid_targets
             if isinstance(game_state._amount_of_targets, int):
@@ -465,6 +488,25 @@ class GameEngine:
             valid_target_lists = self.list_of_subsets(valid_targets, min_size=min_size, max_size=max_size)
             for target_list in valid_target_lists:
                 valid_actions.append({'action': DiscardAction(active_player.id, target_list),
+                                      'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
+                
+        elif game_state.pending_action == "defeat":
+            # During the discard phase, the active player can choose which cards to defeat.
+            if not game_state._valid_targets:
+                raise ValueError("No valid targets for stealing action.")
+            if not game_state._amount_of_targets:
+                raise ValueError("No amount of targets specified for defeat action.")
+            
+            valid_targets = game_state._valid_targets
+            if isinstance(game_state._amount_of_targets, int):
+                min_size = max_size = min(game_state._amount_of_targets, len(valid_targets))
+            else:
+                min_size = min(game_state._amount_of_targets[0], len(valid_targets))
+                max_size = min(game_state._amount_of_targets[1], len(valid_targets))
+
+            valid_target_lists = self.list_of_subsets(valid_targets, min_size=min_size, max_size=max_size)
+            for target_list in valid_target_lists:
+                valid_actions.append({'action': DefeatAction(active_player.id, target_list),
                                       'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
             
         elif game_state.pending_action == "play_from_discard":
