@@ -42,10 +42,10 @@ class GameState:
                       player2_id: str,
                       starting_deck: List[Card], # All starting cards from data/cards.json
                       deck_size: int = 10, # Standard deck size
-                      hand_size: int = 5,
-                      forced_cards_1: List[Card] = [],
-                      forced_cards_2: List[Card] = []
-                      ): # Standard hand size
+                      hand_size: int = 5, # Standard hand size
+                      p1_forced_cards: List[Card] = [],
+                      p2_forced_cards: List[Card] = []
+                      ):
         """
         Sets up the initial state for a new Mindbug game.
 
@@ -60,7 +60,7 @@ class GameState:
             A new GameState object representing the beginning of the game.
         """
         # Create a list of cards that are not in forced_cards
-        other_cards = [card for card in starting_deck if (card not in forced_cards_1 and card not in forced_cards_2)]
+        other_cards = [card for card in starting_deck if (card not in p1_forced_cards and card not in p2_forced_cards)]
 
         # Shuffle the common deck of cards
         random.shuffle(other_cards)
@@ -69,17 +69,17 @@ class GameState:
         if len(starting_deck) < deck_size * 2:
             raise ValueError(f"Not enough creature cards to form decks. Need at least {deck_size * 2}, but found {len(starting_deck)}.")
 
-        player1_deck_list = forced_cards_1 + other_cards[0:deck_size-len(forced_cards_1)]
-        player2_deck_list = forced_cards_2 + other_cards[deck_size-len(forced_cards_1):2*deck_size-len(forced_cards_2)]
+        p1_deck_list = p1_forced_cards + other_cards[0:deck_size-len(p1_forced_cards)]
+        p2_deck_list = p2_forced_cards + other_cards[deck_size-len(p1_forced_cards):2*deck_size-len(p2_forced_cards)]
 
         # Create Player objects
         player1 = Player(
             id=player1_id,
-            deck=player1_deck_list
+            deck=p1_deck_list
         )
         player2 = Player(
             id=player2_id,
-            deck=player2_deck_list
+            deck=p2_deck_list
         )
 
         players = {player1_id: player1, player2_id: player2}

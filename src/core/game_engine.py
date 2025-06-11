@@ -11,7 +11,14 @@ import src.core.game_rules as GameRules
 from src.agents.base_agent import BaseAgent
 
 class GameEngine:
-    def __init__(self, deck_size: int = 10, hand_size: int = 5, agents: Dict[str, BaseAgent] = {}):
+    def __init__(
+            self,
+            all_cards: List[Card], 
+            deck_size: int = 10, 
+            hand_size: int = 5, 
+            agents: Dict[str, BaseAgent] = {}
+        ):
+        self.all_cards = all_cards
         self.deck_size = deck_size
         self.hand_size = hand_size
         self.agents = agents
@@ -313,3 +320,72 @@ class GameEngine:
             return [] # No valid actions
 
         return valid_actions
+    
+    # --- Play a full game and return the history ---
+
+    def play_game(
+            self,
+            p1_forced_card_ids: List[str] = [],
+            p2_forced_card_ids: List[str] = []
+        ) -> Dict:
+        """
+        Plays a full game with the current agents and returns the final game state as a Dict.
+        """
+
+        logs = {}
+
+        # Make a list of forced cards for testing purposes
+        p1_forced_cards = []
+        for card_id in p1_forced_card_ids:
+            for card in self.all_cards:
+                if card.id == card_id:
+                    p1_forced_cards.append(card)
+                    break
+            else:
+                raise ValueError(f"Forced card ID '{card_id}' not found in all cards.")
+        p2_forced_cards = []
+        for card_id in p2_forced_card_ids:
+            for card in self.all_cards:
+                if card.id == card_id:
+                    p2_forced_cards.append(card)
+                    break
+            else:
+                raise ValueError(f"Forced card ID '{card_id}' not found in all cards.")
+        
+        player1_id=list(self.agents.keys())[0]
+        player2_id=list(self.agents.keys())[1]
+
+        game_state = GameState.initial_state(
+            player1_id=player1_id,
+            player2_id=player2_id,
+            starting_deck=self.all_cards,
+            deck_size=self.deck_size,
+            hand_size=self.hand_size,
+            p1_forced_cards=p1_forced_cards,
+            p2_forced_cards=p2_forced_cards
+        )
+
+        p1_initial_deck = [card.id for card in game_state.get_player(player1_id).hand + game_state.get_player(player1_id).deck]
+        p2_initial_deck = [card.id for card in game_state.get_player(player2_id).hand + game_state.get_player(player2_id).deck]
+
+        logs['initial_decks'] = {
+            player1_id: p1_initial_deck,
+            player2_id: p2_initial_deck
+        }
+
+        while not game_state.game_over:
+            active_player_id = game_state.active_player_id
+            active_agent = self.agents[active_player_id]
+
+            valid_actions = self.get_valid_actions(game_state)
+            
+            if not valid_actions:
+                print(f"{active_player_id} has no valid actions and loses!")
+                game_state.game_over = True
+                game_state.winner_id = game_state.inactive_player_id
+                break
+
+            chosen_action = active_agent.choose_action(game_state, valid_actions)
+            game_state = self.apply_action(game_state, chosen_action)
+
+        return logs
