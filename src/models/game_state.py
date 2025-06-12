@@ -30,6 +30,7 @@ class GameState:
         self._amount_of_targets: Optional[int | Tuple[int, int]] = None
         self._switch_active_player_back: bool = False
         self._already_hunted: bool = False
+        self._return_to_attack: bool = False
 
     @classmethod
     def initial_state(cls,

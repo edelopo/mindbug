@@ -142,6 +142,8 @@ class MindbugCLI:
                 return "Discard"
             elif isinstance(action, DefeatAction):
                 return "Defeat"
+            elif isinstance(action, HuntAction):
+                return "Hunt"
             elif isinstance(action, FrenzyAction):
                 if action.go_again:
                     return "Attack again"

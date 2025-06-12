@@ -81,7 +81,7 @@ Phase 5: Basic AI & Parallelization
         Unit Test: Test RandomAgent's choose_action to ensure it always returns a valid action.
 
     Action Class (src/models/action.py - if not already done):
-        Formalize actions into a class structure (e.g., PlayCreatureAction(card_id), AttackAction(attacker_id, target_id), EndTurnAction()). This makes actions more robust and easier for AI to work with.
+        Formalize actions into a class structure (e.g., PlayCreatureAction(card_id), AttackAction(attacker_id, target_id)). This makes actions more robust and easier for AI to work with.
 
     Parallel Game Runner (src/main.py & run_single_game function):
         Implement the run_single_game function.

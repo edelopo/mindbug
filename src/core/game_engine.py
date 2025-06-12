@@ -335,7 +335,11 @@ class GameEngine:
         game_state._valid_targets = None
         game_state._amount_of_targets = None
 
-        game_state._pending_action = "finish_action"
+        if game_state._return_to_attack:
+            game_state._pending_action = "continue_attack"
+            game_state._return_to_attack = False
+        else:
+            game_state._pending_action = "finish_action"
         return game_state
         
     def _handle_steal_action(self, game_state: GameState, action: StealAction) -> GameState:
