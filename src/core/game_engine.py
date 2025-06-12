@@ -145,15 +145,18 @@ class GameEngine:
             drawn_card = player.draw_card()
         
         # 3. Opponent gets a chance to Mindbug
-        game_state._pending_mindbug_card_uuid = card_to_play.uuid # Store the card being played for Mindbug decision
-        game_state._pending_action = "mindbug" # Set phase to mindbug
-        game_state.switch_active_player() # Switch to opponent for Mindbug decision
-        # Store the card being played temporarily for Mindbug decision
+        if opponent.mindbugs:
+            game_state._pending_mindbug_card_uuid = card_to_play.uuid # Store the card being played for Mindbug decision
+            game_state._pending_action = "mindbug" # Set phase to mindbug
+            game_state.switch_active_player() # Switch to opponent for Mindbug decision
+            
+            print(f"{opponent.id}, do you want to Mindbug {card_to_play.name}?")
+            # The game loop will now wait for a UseMindbugAction or PassMindbugAction from the opponent.
+        else:
+            print(f"{opponent.id} has no Mindbugs left.")
+            game_state = GameRules.activate_play_ability(game_state, card_to_play.uuid, self.agents)
         
-        print(f"{opponent.id}, do you want to Mindbug {card_to_play.name}?")
-        # The game loop will now wait for a UseMindbugAction or PassMindbugAction from inactive player.
-        
-        return game_state # State is now waiting for Mindbug response
+        return game_state
     
     def _handle_play_from_discard_action(self, game_state: GameState, action: PlayFromDiscardAction) -> GameState:
         """

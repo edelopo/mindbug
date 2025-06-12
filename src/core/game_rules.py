@@ -125,7 +125,9 @@ def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents:
     opponent = game_state.get_opponent_of(card_played.controller.id)
     if "deathweaver" in [card.id for card in opponent.play_area]:
         print(f"{card_played.name} cannot activate its play ability because Deathweaver is in play.")
+        game_state._pending_action = "finish_action"
         return game_state
+    
     if card_played.ability_type == "play":
         print(f"Activating Play ability of {card_played.name} for {card_played.controller.id}")
         handler = play_ability_handlers.get(card_played.id)
