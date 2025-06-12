@@ -131,10 +131,11 @@ class MindbugCLI:
                 return "Block"
             elif isinstance(action, StealAction):
                 return "Steal"
-            elif isinstance(action, UseMindbugAction):
-                return "Use Mindbug"
-            elif isinstance(action, PassMindbugAction):
-                return "Pass Mindbug"
+            elif isinstance(action, MindbugAction):
+                if action.use_mindbug:
+                    return "Use Mindbug"
+                else:
+                    return "Don't Use Mindbug"
             elif isinstance(action, PlayFromDiscardAction):
                 return "Play from Discard"
             elif isinstance(action, DiscardAction):

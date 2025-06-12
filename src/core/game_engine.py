@@ -59,6 +59,10 @@ class GameEngine:
                 "action": BlockAction,
                 "handler": self._handle_block_action,
             },
+            "mindbug": {
+                "action": MindbugAction,
+                "handler": self._handle_mindbug_response,
+            },
         }
 
     def apply_action(self, game_state: GameState, action: Action) -> GameState:
@@ -73,12 +77,6 @@ class GameEngine:
         new_state = copy.deepcopy(game_state)
         if action.player_id != new_state.active_player_id:
                 raise ValueError(f"Wrong active player: {action}.")
-
-        if new_state._pending_action == "mindbug":
-            if isinstance(action, UseMindbugAction) or isinstance(action, PassMindbugAction):
-                return self._handle_mindbug_response(new_state, action)
-            else:
-                raise ValueError(f"Invalid action type during {new_state._pending_action} phase: {type(action)}.")
         
         elif new_state._pending_action == "play_or_attack":
             if isinstance(action, PlayCardAction):
@@ -181,7 +179,7 @@ class GameEngine:
 
         return game_state
 
-    def _handle_mindbug_response(self, game_state: GameState, action: Action) -> GameState:
+    def _handle_mindbug_response(self, game_state: GameState, action: MindbugAction) -> GameState:
         opponent = game_state.get_active_player() # In mindbug phase, the "active" player is the opponent.
         player = game_state.get_inactive_player() # The player who originally played the card.
         # Get the card pending Mindbug response
@@ -195,7 +193,7 @@ class GameEngine:
         if action.player_id != opponent.id:
             raise ValueError(f"Action player {action.player_id} is not the active player {opponent.id} during Mindbug phase.")
         
-        if isinstance(action, UseMindbugAction):
+        if action.use_mindbug:
             if opponent.mindbugs:
                 opponent.use_mindbug()
                 print(f"{opponent.id} uses a Mindbug on {played_card.name}!")
@@ -210,8 +208,7 @@ class GameEngine:
                 # Now we do NOT switch back to the original player, so that when the turn ends they go again.
             else:
                 raise ValueError(f"{opponent.id} tried to use Mindbug but has no Mindbugs left.")
-
-        elif isinstance(action, PassMindbugAction):
+        else:
             print(f"{opponent.id} passes on Mindbugging {played_card.name}.")
             game_state.switch_active_player() # Switch back to original player
             game_state = GameRules.activate_play_ability(game_state, played_card.uuid, self.agents)
@@ -471,15 +468,13 @@ class GameEngine:
 
         if game_state._pending_action == "mindbug":
             # During the mindbug phase, the active player must choose whether to use a mindbug or not.
-            if active_player.mindbugs:
-                if game_state._pending_mindbug_card_uuid:
-                    # If there is a pending Mindbug card, the player can choose to use a Mindbug on it.
-                    card_name = GameRules.get_card_by_uuid(game_state, game_state._pending_mindbug_card_uuid).name
-                else:
-                    raise ValueError("Mindbug phase entered without a pending Mindbug card.")
-                valid_actions.append({'action': UseMindbugAction(active_player.id),
-                                      'card_name': card_name})
-            valid_actions.append({'action': PassMindbugAction(active_player.id)})
+            if not active_player.mindbugs:
+                raise ValueError(f"Entered Mindbug phase but {active_player.id} has no Mindbugs left to use.")
+            if not game_state._pending_mindbug_card_uuid:
+                raise ValueError("Mindbug phase entered without a pending Mindbug card.")
+
+            valid_actions.append({'action': MindbugAction(active_player.id, use_mindbug=True)})
+            valid_actions.append({'action': MindbugAction(active_player.id, use_mindbug=False)})
 
         elif game_state._pending_action == "play_or_attack":
             # During the play phase, the active player can play a card or attack with a card on the play area.
