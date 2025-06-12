@@ -656,9 +656,9 @@ class GameEngine:
             p2_forced_cards=p2_forced_cards
         )
 
-        p1_initial_deck = {card.uuid: card.id 
+        p1_initial_deck = {str(card.uuid): card.id 
                            for card in game_state.get_player(player1_id).hand + game_state.get_player(player1_id).deck}
-        p2_initial_deck = {card.uuid: card.id
+        p2_initial_deck = {str(card.uuid): card.id
                            for card in game_state.get_player(player2_id).hand + game_state.get_player(player2_id).deck}
 
         logs['agents'] = {
@@ -705,5 +705,30 @@ class GameEngine:
                 "action": str(action),
             })
             game_state = self.apply_action(game_state, action)
+
+        for player in game_state.players.values():
+            if player.life_points <= 0:
+                win_condition = "life_below_zero"
+        else:
+            win_condition = "run_out_of_actions"
+
+        logs['final_state'] = {
+            "active_player_id": game_state.active_player_id,
+            "inactive_player_id": game_state.inactive_player_id,
+            "turn_count": game_state.turn_count,
+            "game_over": game_state.game_over,
+            "winner_id": game_state.winner_id,
+            "win_condition": win_condition,
+            "players": {
+                player.id: {
+                    "life_points": player.life_points,
+                    "hand": [str(card.uuid) for card in player.hand],
+                    "play_area": [str(card.uuid) for card in player.play_area],
+                    "discard_pile": [str(card.uuid) for card in player.discard_pile],
+                    "deck_size": len(player.deck),
+                    "mindbugs": player.mindbugs
+                } for player in game_state.players.values()
+            }
+        }
 
         return logs
