@@ -65,16 +65,18 @@ def run_aivai_game(deck_size: int = 5, hand_size: int = 2):
     cards_json_path = os.path.join(current_dir, 'data', 'cards.json')
     all_cards_list = load_cards_from_json(filepath=cards_json_path)
 
-    player1_id = "Random Agent"
-    player2_id = "Zero Agent"
+    player1_id = "AI1"
+    player2_id = "AI2"
     agents: Dict[str, BaseAgent] = {player1_id: RandomAgent(player1_id), player2_id: ZeroAgent(player2_id)}
 
     game_engine = GameEngine(all_cards=all_cards_list, deck_size=deck_size, hand_size=hand_size, agents=agents)
     
-    game_engine.play_game(
+    logs = game_engine.play_game(
         p1_forced_card_ids=[],
-        p2_forced_card_ids=['deathweaver']
+        p2_forced_card_ids=[]
     )
+
+    return logs
 
 if __name__ == "__main__":
     # run_pvp_game()
@@ -83,7 +85,7 @@ if __name__ == "__main__":
     # Uncomment the following lines to run AI vs AI games in parallel
     # ----------------------
 
-    num_games = 100
+    num_games = 1
     deck_size = 10
     hand_size = 5
     args_list = [(deck_size, hand_size) for _ in range(num_games)]
@@ -99,6 +101,9 @@ if __name__ == "__main__":
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
     print(f"--- Completed {num_games} AI vs AI games ---")
+
+    import pprint
+    pprint.pp(results)
     
     # # Count wins for each player
     # winners = [game_state.winner_id for game_state in results]

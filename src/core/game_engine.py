@@ -661,13 +661,21 @@ class GameEngine:
             p2_forced_cards=p2_forced_cards
         )
 
-        p1_initial_deck = [card.id for card in game_state.get_player(player1_id).hand + game_state.get_player(player1_id).deck]
-        p2_initial_deck = [card.id for card in game_state.get_player(player2_id).hand + game_state.get_player(player2_id).deck]
+        p1_initial_deck = {card.uuid: card.id 
+                           for card in game_state.get_player(player1_id).hand + game_state.get_player(player1_id).deck}
+        p2_initial_deck = {card.uuid: card.id
+                           for card in game_state.get_player(player2_id).hand + game_state.get_player(player2_id).deck}
+
+        logs['agents'] = {
+            player1_id: type(self.agents[player1_id]).__name__,
+            player2_id: type(self.agents[player2_id]).__name__  # This is temporary, we should have a better way to label agents.
+        }
 
         logs['initial_decks'] = {
             player1_id: p1_initial_deck,
             player2_id: p2_initial_deck
         }
+        logs['history'] = []
 
         while not game_state.game_over:
             if game_state._pending_action == "finish_action":
@@ -696,7 +704,11 @@ class GameEngine:
                 game_state.winner_id = game_state.inactive_player_id
                 break
 
-            chosen_action = active_agent.choose_action(game_state, valid_actions)
-            game_state = self.apply_action(game_state, chosen_action)
+            action = active_agent.choose_action(game_state, valid_actions)
+            logs['history'].append({
+                "turn": game_state.turn_count,
+                "action": str(action),
+            })
+            game_state = self.apply_action(game_state, action)
 
         return logs

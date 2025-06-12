@@ -24,7 +24,7 @@ class AttackAction(Action):
         self.attacking_card_uuid = attacking_card_uuid
 
     def __repr__(self):
-        return (f"AttackAction(Player: {self.player_id}, Attacking Card: {self.attacking_card_uuid})")
+        return (f"AttackAction(Player: {self.player_id}, Card: {self.attacking_card_uuid})")
 
 class BlockAction(Action):
     def __init__(self, player_id: str, blocking_card_uuid: Optional[UUID] = None):
@@ -32,7 +32,7 @@ class BlockAction(Action):
         self.blocking_card_uuid = blocking_card_uuid # The card blocking, None if no block
 
     def __repr__(self):
-        return (f"BlockAction(Player: {self.player_id}, Blocking Card: {self.blocking_card_uuid})")
+        return (f"BlockAction(Player: {self.player_id}, Card: {self.blocking_card_uuid})")
 
 class UseMindbugAction(Action):
     def __init__(self, player_id: str):
