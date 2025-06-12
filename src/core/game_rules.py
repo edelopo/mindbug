@@ -263,6 +263,7 @@ def _giraffodile_play_ability(game_state: GameState, card_uuid: UUID, agents: Di
 
     if not player.discard_pile:
         print(f"{player.id} has no cards in discard pile to draw.")
+        game_state._pending_action = "finish_action"
         return game_state
 
     # Move all cards from discard pile to hand
