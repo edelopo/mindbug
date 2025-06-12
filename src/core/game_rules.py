@@ -123,16 +123,16 @@ def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents:
     if card_played.controller is None:
         raise ValueError(f"Card with UUID {card_played_uuid} has no controller. Cannot activate play ability.")
     opponent = game_state.get_opponent_of(card_played.controller.id)
-    if "deathweaver" in [card.id for card in opponent.play_area]:
-        print(f"{card_played.name} cannot activate its play ability because Deathweaver is in play.")
-        game_state._pending_action = "finish_action"
-        return game_state
     
     if card_played.ability_type == "play":
-        print(f"Activating Play ability of {card_played.name} for {card_played.controller.id}")
-        handler = play_ability_handlers.get(card_played.id)
-        if handler:
-            game_state = handler(copy.deepcopy(game_state), card_played_uuid, agents)
+        if "deathweaver" in [card.id for card in opponent.play_area]:
+            print(f"{card_played.name} cannot activate its play ability because Deathweaver is in play.")
+            game_state._pending_action = "finish_action"
+        else:
+            print(f"Activating Play ability of {card_played.name} for {card_played.controller.id}")
+            handler = play_ability_handlers.get(card_played.id)
+            if handler:
+                game_state = handler(copy.deepcopy(game_state), card_played_uuid, agents)
     else:
         game_state._pending_action = "finish_action"
     return game_state
@@ -444,6 +444,8 @@ def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID
         game_state._pending_action = "defeat"
         game_state._valid_targets = valid_targets
         game_state._amount_of_targets = 1
+    else:
+        game_state._pending_action = "continue_attack"
 
     return game_state
 
@@ -477,6 +479,8 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
         game_state._pending_action = "continue_attack"
         return game_state
 
+    game_state.switch_active_player()  # Switch to opponent for discard action
+    game_state._switch_active_player_back = True
     game_state._pending_action = "discard"
     game_state._valid_targets = valid_targets
     game_state._amount_of_targets = 1

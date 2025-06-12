@@ -73,7 +73,7 @@ def run_aivai_game(deck_size: int = 5, hand_size: int = 2):
     
     game_engine.play_game(
         p1_forced_card_ids=[],
-        p2_forced_card_ids=[]
+        p2_forced_card_ids=['deathweaver']
     )
 
 if __name__ == "__main__":

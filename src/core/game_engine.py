@@ -238,7 +238,12 @@ class GameEngine:
             # This is the second part of the phase, where we resolve the attack
             if ("Hunter" in GameRules.get_effective_keywords(game_state, attacking_card.uuid)
                 and not game_state._already_hunted):
-                game_state._pending_action = "hunt"
+                valid_targets = [card.uuid for card in blocking_player.play_area]
+                if not valid_targets:
+                    game_state._pending_action = "resolve_attack"
+                else:
+                    game_state._valid_targets = valid_targets
+                    game_state._pending_action = "hunt"
                 return game_state
             # If there is no Hunter ability or it has already been used, move on to choosing a blocker
             else:
@@ -253,12 +258,11 @@ class GameEngine:
                 
                 if not valid_blockers:
                     game_state._pending_action = "resolve_attack"
-                    return game_state
                 else:
                     game_state.switch_active_player() # Switch to opponent for blocking decision
                     game_state._valid_targets = valid_blockers
                     game_state._pending_action = "block"
-                    return game_state
+                return game_state
         
         elif game_state._pending_action == "resolve_attack":
             if not game_state._pending_block_card_uuid:
