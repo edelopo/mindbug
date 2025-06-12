@@ -444,6 +444,7 @@ def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID
             return game_state
         
         game_state._pending_action = "defeat"
+        game_state._return_to_attack = True  # Return to attack phase after defeating
         game_state._valid_targets = valid_targets
         game_state._amount_of_targets = 1
     else:
@@ -484,6 +485,7 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
     game_state.switch_active_player()  # Switch to opponent for discard action
     game_state._switch_active_player_back = True
     game_state._pending_action = "discard"
+    game_state._return_to_attack = True  # Return to attack phase after discard
     game_state._valid_targets = valid_targets
     game_state._amount_of_targets = 1
 

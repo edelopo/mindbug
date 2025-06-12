@@ -31,8 +31,8 @@ def run_pvp_game():
     print("--- Starting Mindbug Game ---")
     
     logs = game_engine.play_game(
-        p1_forced_card_ids=['goblin_werewolf'],
-        p2_forced_card_ids=['shark_dog']
+        p1_forced_card_ids=["ferret_bomber","tusked_extorter"],
+        p2_forced_card_ids=[]
     )
 
     print("\n--- Game Finished ---")

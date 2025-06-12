@@ -125,14 +125,7 @@ class GameEngine:
     def _handle_play_card_action(self, game_state: GameState, action: PlayCardAction) -> GameState:
         player = game_state.get_active_player()
         opponent = game_state.get_inactive_player()
-        card_to_play_uuid = action.card_uuid
-
-        for card in player.hand:
-            if card.uuid == card_to_play_uuid:
-                card_to_play = card
-                break
-        else:
-            raise ValueError(f"Card with UUID {card_to_play_uuid} not found in {player.id}'s hand.")
+        card_to_play = GameRules.get_card_by_uuid(game_state, action.card_uuid)
             
         # 1. Remove card from hand
         player.play_card(card_to_play) # player.play_card removes it from hand and adds it to play_area.
@@ -391,7 +384,12 @@ class GameEngine:
         game_state._valid_targets = None
         game_state._amount_of_targets = None
 
-        game_state._pending_action = "finish_action"
+        if game_state._return_to_attack:
+            game_state._pending_action = "continue_attack"
+            game_state.switch_active_player()
+            game_state._return_to_attack = False
+        else:
+            game_state._pending_action = "finish_action"
         return game_state
 
     def _handle_hunt_action(self, game_state: GameState, action: HuntAction) -> GameState:
@@ -680,6 +678,7 @@ class GameEngine:
             if game_state._pending_action == "finish_action":
                 if game_state._switch_active_player_back:
                     game_state.switch_active_player()
+                    game_state._switch_active_player_back = False # Reset the flag
                 game_state = self.end_turn(game_state)
                 continue
                 
