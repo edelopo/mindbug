@@ -159,6 +159,8 @@ def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, a
         handler = defeated_ability_handlers.get(defeated_card.id)
         if handler:
             game_state = handler(copy.deepcopy(game_state), defeated_card_uuid, agents)
+    else:
+        game_state._pending_action = "finish_action"
     return game_state
 
 
@@ -389,6 +391,7 @@ def _chameleon_sniper_attack_ability(game_state: GameState, attacking_card_uuid:
         game_state.winner_id = player.id
         print(f"{opponent.id} has no life points left! {game_state.winner_id} wins!")
 
+    game_state._pending_action = "continue_attack"
     return game_state
 
 def _shark_dog_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -404,29 +407,16 @@ def _shark_dog_attack_ability(game_state: GameState, attacking_card_uuid: UUID, 
     for card in opponent.play_area:
         effective_power = get_effective_power(game_state, card.uuid)
         if effective_power >= 6:
-            valid_targets.append(card)
+            valid_targets.append(card.uuid)
 
     if not valid_targets:
         print(f"No valid creatures with power 6 or more to defeat.")
+        game_state._pending_action = "continue_attack"
         return game_state
     
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=player.id,
-        options=valid_targets,
-        min_choices=1,
-        max_choices=1,
-        purpose="defeat",
-        prompt="Choose a creature with power 6 or more to DEFEAT."
-    )
-
-    # Ask the agent to choose
-    agent = agents[player.id]
-    chosen_card = agent.choose_cards(game_state, choice_request)[0]
-
-    # Defeat the chosen card
-    print(f"{player.id} defeats {chosen_card.name} with Shark Dog's attack ability.")
-    game_state = defeat(game_state, chosen_card.uuid, agents)
+    game_state._pending_action = "defeat"
+    game_state._valid_targets = valid_targets
+    game_state._amount_of_targets = 1
     
     return game_state
 
@@ -441,30 +431,17 @@ def _snail_hydra_attack_ability(game_state: GameState, attacking_card_uuid: UUID
 
     # Check if player controls fewer creatures than opponent
     if len(player.play_area) < len(opponent.play_area):
-        valid_targets = opponent.play_area + player.play_area  # Can defeat any creature (except itself)
-        valid_targets = [card for card in valid_targets if card.uuid != attacking_card.uuid]  # Exclude itself
+        valid_targets = [card.uuid for card in opponent.play_area + player.play_area]  # Can defeat any creature (except itself)
+        valid_targets = [uuid for uuid in valid_targets if uuid != attacking_card.uuid]  # Exclude itself
 
         if not valid_targets:
             print(f"No creatures to defeat.")
+            game_state._pending_action = "continue_attack"
             return game_state
         
-        # Create a choice request
-        choice_request = CardChoiceRequest(
-            player_id=player.id,
-            options=valid_targets,
-            min_choices=1,
-            max_choices=1,
-            purpose="defeat",
-            prompt="Choose a creature to DEFEAT."
-        )
-
-        # Ask the agent to choose
-        agent = agents[player.id]
-        chosen_card = agent.choose_cards(game_state, choice_request)[0]
-
-        # Defeat the chosen card
-        print(f"{player.id} defeats {chosen_card.name} with Snail Hydra's attack ability.")
-        game_state = defeat(game_state, chosen_card.uuid, agents)
+        game_state._pending_action = "defeat"
+        game_state._valid_targets = valid_targets
+        game_state._amount_of_targets = 1
 
     return game_state
 
@@ -481,6 +458,7 @@ def _turbo_bug_attack_ability(game_state: GameState, attacking_card_uuid: UUID, 
         print(f"{opponent.id} loses all life points except one due to Turbo Bug.")
         opponent.life_points = 1
 
+    game_state._pending_action = "continue_attack"
     return game_state
 
 def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -490,26 +468,16 @@ def _tusked_extorter_attack_ability(game_state: GameState, attacking_card_uuid: 
         raise ValueError("Attacking card has no controller. Cannot resolve attack ability.")
     
     opponent = game_state.get_opponent_of(attacking_card.controller.id)
-    
-    if not opponent.hand:
+    valid_targets = [card.uuid for card in opponent.hand]
+
+    if not valid_targets:
         print(f"{opponent.id}'s hand is empty, cannot discard.")
+        game_state._pending_action = "continue_attack"
         return game_state
 
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=opponent.id,
-        options=opponent.hand,
-        min_choices=1,
-        max_choices=1,
-        purpose="discard",
-        prompt="Choose a card to DISCARD."
-    )
-
-    # Ask the agent to choose
-    agent = agents[opponent.id]
-    chosen_card = agent.choose_cards(game_state, choice_request)[0]
-    opponent.discard_card(chosen_card)
-    print(f"{opponent.id} discards {chosen_card.name} due to Tusked Extorter.")
+    game_state._pending_action = "discard"
+    game_state._valid_targets = valid_targets
+    game_state._amount_of_targets = 1
 
     return game_state
 
@@ -524,29 +492,16 @@ def _explosive_toad_defeated_ability(game_state: GameState, defeated_card_uuid: 
     player = defeated_card.controller
     opponent = game_state.get_opponent_of(player.id)
 
-    valid_targets = opponent.play_area + player.play_area
+    valid_targets = [card.uuid for card in opponent.play_area + player.play_area]
 
     if not valid_targets:
         print(f"No creatures to defeat.")
+        game_state._pending_action = "finish_action"
         return game_state
     
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=player.id,
-        options=valid_targets,
-        min_choices=min(1, len(valid_targets)),
-        max_choices=1,
-        purpose="defeat",
-        prompt="Choose a creature to DEFEAT."
-    )
-
-    # Ask the agent to choose
-    agent = agents[player.id]
-    chosen_card = agent.choose_cards(game_state, choice_request)[0]
-
-    # Defeat the chosen card
-    print(f"{player.id} defeats {chosen_card.name} with Explosive Toad's attack ability.")
-    game_state = defeat(game_state, chosen_card.uuid, agents)
+    game_state._pending_action = "defeat"
+    game_state._valid_targets = valid_targets
+    game_state._amount_of_targets = 1
     
     return game_state
 
@@ -563,32 +518,16 @@ def _harpy_mother_defeated_ability(game_state: GameState, defeated_card_uuid: UU
     for card in opponent.play_area:
         effective_power = get_effective_power(game_state, card.uuid)
         if effective_power <= 5:
-            valid_targets.append(card)
+            valid_targets.append(card.uuid)
 
     if not valid_targets:
         print(f"No valid creatures with power 5 or less to take control of.")
+        game_state._pending_action = "finish_action"
         return game_state
     
-    # Create a choice request
-    choice_request = CardChoiceRequest(
-        player_id=player.id,
-        options=valid_targets,
-        min_choices=min(2, len(valid_targets)),
-        max_choices=min(2, len(valid_targets)),
-        purpose="steal",
-        prompt="Choose up to two creatures with power 5 or less to STEAL."
-    )
-
-    # Ask the agent to choose
-    agent = agents[player.id]
-    chosen_cards = agent.choose_cards(game_state, choice_request)
-
-    # Steal the chosen cards
-    for card in chosen_cards:
-        opponent.play_area.remove(card)
-        player.play_area.append(card)
-        card.controller = player
-        print(f"{player.id} steals {card.name} from {opponent.id}.")
+    game_state._pending_action = "steal"
+    game_state._valid_targets = valid_targets
+    game_state._amount_of_targets = 2
 
     return game_state
 
@@ -615,6 +554,7 @@ def _strange_barrel_defeated_ability(game_state: GameState, defeated_card_uuid: 
         card.controller = player
         print(f"{player.id} steals {card.name} from {opponent.id}'s hand.")
 
+    game_state._pending_action = "finish_action"
     return game_state
 
 # -- Passive Abilities --
