@@ -712,6 +712,7 @@ class GameEngine:
         for player in game_state.players.values():
             if player.life_points <= 0:
                 win_condition = "life_below_zero"
+                break
         else:
             win_condition = "run_out_of_actions"
 
