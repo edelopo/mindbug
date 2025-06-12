@@ -28,7 +28,7 @@ def run_pvp_game():
     print("--- Starting Mindbug Game ---")
     
     game_engine.play_game(
-        p1_forced_card_ids=['elephantopus', 'tusked_extorter'],
+        p1_forced_card_ids=['luchataur'],
         p2_forced_card_ids=['tiger_squirrel']
     )
 

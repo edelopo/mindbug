@@ -48,7 +48,7 @@ class MindbugCLI:
 
         # Game header with turn info
         print("\n" + "╔" + "═"*(self.width-2) + "╗")
-        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PENDING ACTION: ' + game_state.pending_action.upper():^{self.width-2}}║")
+        print(f"║{'TURN ' + str(game_state.turn_count) + ' - PENDING ACTION: ' + game_state._pending_action.upper():^{self.width-2}}║")
         print("╚" + "═"*(self.width-2) + "╝")
 
         # Active player indicator
@@ -126,6 +126,8 @@ class MindbugCLI:
             elif isinstance(action, AttackAction):
                 return "Attack"
             elif isinstance(action, BlockAction):
+                if not action.blocking_card_uuid:
+                    return "Don't Block"
                 return "Block"
             elif isinstance(action, StealAction):
                 return "Steal"
@@ -139,6 +141,11 @@ class MindbugCLI:
                 return "Discard"
             elif isinstance(action, DefeatAction):
                 return "Defeat"
+            elif isinstance(action, FrenzyAction):
+                if action.go_again:
+                    return "Attack again"
+                else:
+                    return "Stop attacking"
             else:
                 return "Unknown Action"
 

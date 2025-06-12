@@ -79,6 +79,22 @@ class DefeatAction(Action):
 
     def __repr__(self):
         return (f"DefeatAction(Player: {self.player_id}, Cards: {self.card_uuids})")
+    
+class HuntAction(Action):
+    def __init__(self, player_id: str, card_uuid: Optional[UUID]):
+        super().__init__(player_id)
+        self.card_uuid = card_uuid
+
+    def __repr__(self):
+        return (f"HuntAction(Player: {self.player_id}, Card: {self.card_uuid})")
+    
+class FrenzyAction(Action):
+    def __init__(self, player_id: str, go_again: bool):
+        super().__init__(player_id)
+        self.go_again = go_again
+
+    def __repr__(self):
+        return (f"FrenzyAction(Player: {self.player_id}, Go again: {self.go_again})")
 
 class CardChoiceRequest:
     def __init__(

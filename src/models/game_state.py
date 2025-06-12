@@ -19,15 +19,17 @@ class GameState:
         self.inactive_player_id: str = inactive_player_id
         self.players: Dict[str, Player] = players
         self.turn_count: int = turn_count
-        self.pending_action: str = "play_or_attack"
         self.game_over: bool = False
         self.winner_id: Optional[str] = None
+        self._pending_action: str = "play_or_attack"
         self._pending_mindbug_card_uuid: Optional[UUID] = None
         self._pending_attack_card_uuid: Optional[UUID] = None
+        self._pending_block_card_uuid: Optional[UUID] = None
         self._frenzy_active: bool = False
         self._valid_targets: Optional[List[UUID]] = None
         self._amount_of_targets: Optional[int | Tuple[int, int]] = None
         self._switch_active_player_back: bool = False
+        self._already_hunted: bool = False
 
     @classmethod
     def initial_state(cls,
@@ -145,7 +147,7 @@ class GameState:
         inactive_player = self.get_inactive_player()
 
         return (
-            f"--- GameState (Turn {self.turn_count}, Pending action: {self.pending_action}) ---\n"
+            f"--- GameState (Turn {self.turn_count}, Pending action: {self._pending_action}) ---\n"
             f"Active Player: {active_player.id} (Life: {active_player.life_points}, Hand: {len(active_player.hand)}, Deck: {len(active_player.deck)}, Mindbugs: {active_player.mindbugs})\n"
             f"  Play area: {[c.name for c in active_player.play_area]}\n"
             f"Inactive Player: {inactive_player.id} (Life: {inactive_player.life_points}, Hand: {len(inactive_player.hand)}, Deck: {len(inactive_player.deck)}, Mindbugs: {inactive_player.mindbugs})\n"

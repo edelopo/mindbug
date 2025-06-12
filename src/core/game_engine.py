@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import copy
 from src.models.game_state import GameState
 from src.models.action import *
@@ -18,6 +18,48 @@ class GameEngine:
         self.deck_size = deck_size
         self.hand_size = hand_size
         self.agents = agents
+        self.action_dict = {
+            "steal": {
+                "action": StealAction,
+                "handler": self._handle_steal_action,
+            },
+            "discard": {
+                "action": DiscardAction,
+                "handler": self._handle_discard_action,
+            },
+            "play_from_discard": {
+                "action": PlayFromDiscardAction,
+                "handler": self._handle_play_from_discard_action,
+            },
+            "defeat": {
+                "action": DefeatAction,
+                "handler": self._handle_defeat_action,
+            },
+            "hunt": {
+                "action": HuntAction,
+                "handler": self._handle_hunt_action,
+            },
+            "continue_attack": {
+                "action": AttackAction,
+                "handler": self._handle_attack_action,
+            },
+            "resolve_attack": {
+                "action": AttackAction,
+                "handler": self._handle_attack_action,
+            },
+            "frenzy_attack": {
+                "action": AttackAction,
+                "handler": self._handle_attack_action,
+            },
+            "frenzy": {
+                "action": FrenzyAction,
+                "handler": self._handle_frenzy_action,
+            },
+            "block": {
+                "action": BlockAction,
+                "handler": self._handle_block_action,
+            },
+        }
 
     def apply_action(self, game_state: GameState, action: Action) -> GameState:
         """
@@ -32,52 +74,36 @@ class GameEngine:
         if action.player_id != new_state.active_player_id:
                 raise ValueError(f"Wrong active player: {action}.")
 
-        if new_state.pending_action == "mindbug":
+        if new_state._pending_action == "mindbug":
             if isinstance(action, UseMindbugAction) or isinstance(action, PassMindbugAction):
                 return self._handle_mindbug_response(new_state, action)
             else:
-                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+                raise ValueError(f"Invalid action type during {new_state._pending_action} phase: {type(action)}.")
         
-        elif new_state.pending_action == "play_or_attack":
+        elif new_state._pending_action == "play_or_attack":
             if isinstance(action, PlayCardAction):
                 return self._handle_play_card_action(new_state, action)
             elif isinstance(action, AttackAction):
                 return self._handle_attack_action(new_state, action)
             else:
-                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
-            
-        # elif new_state.pending_action == "block":
+                raise ValueError(f"Invalid action type during {new_state._pending_action} phase: {type(action)}.")
+
+        elif new_state._pending_action in self.action_dict.keys():
+            action_type = self.action_dict[new_state._pending_action]["action"]
+            handler = self.action_dict[new_state._pending_action]["handler"]
+            if isinstance(action, action_type):
+                return handler(new_state, action)
+            else:
+                raise ValueError(f"Invalid action type during {new_state._pending_action} phase: {type(action)}.")
+
+        # elif new_state._pending_action == "block":
         #     if isinstance(action, BlockAction):
         #         return self._handle_block_action(new_state, action)
         #     else:
-        #         raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
-        
-        elif new_state.pending_action == "steal":
-            if isinstance(action, StealAction):
-                return self._handle_steal_action(new_state, action)
-            else:
-                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
-        
-        elif new_state.pending_action == "play_from_discard":
-            if isinstance(action, PlayFromDiscardAction):
-                return self._handle_play_from_discard_action(new_state, action)
-            else:
-                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
-
-        elif new_state.pending_action == "discard":
-            if isinstance(action, DiscardAction):
-                return self._handle_discard_action(new_state, action)
-            else:
-                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
-            
-        elif new_state.pending_action == "defeat":
-            if isinstance(action, DefeatAction):
-                return self._handle_defeat_action(new_state, action)
-            else:
-                raise ValueError(f"Invalid action type during {new_state.pending_action} phase: {type(action)}.")
+        #         raise ValueError(f"Invalid action type during {new_state._pending_action} phase: {type(action)}.")
 
         else:
-            raise ValueError(f"Unknown pending action: {new_state.pending_action}. Cannot apply action {action}.")
+            raise ValueError(f"Unknown pending action: {new_state._pending_action}. Cannot apply action {action}.")
     
     def lose_life(self, game_state: GameState, player_id: str, amount: int = 1) -> GameState:
         """A player loses life."""
@@ -120,7 +146,7 @@ class GameEngine:
         
         # 3. Opponent gets a chance to Mindbug
         game_state._pending_mindbug_card_uuid = card_to_play.uuid # Store the card being played for Mindbug decision
-        game_state.pending_action = "mindbug" # Set phase to mindbug
+        game_state._pending_action = "mindbug" # Set phase to mindbug
         game_state.switch_active_player() # Switch to opponent for Mindbug decision
         # Store the card being played temporarily for Mindbug decision
         
@@ -198,136 +224,96 @@ class GameEngine:
         if attacking_card not in attacking_player.play_area:
             raise ValueError(f"Attacking card {attacking_card.name} not found in {attacking_player.id}'s play area.")
 
-        print(f"{attacking_player.id}'s {attacking_card.name} attacks!")
-
-        # Activate "Attack" abilities (e.g., Tusked Extorter)
-        game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid, self.agents)
-        # Refresh the players after the game_state has been updated
-        attacking_player = game_state.get_active_player()
-        blocking_player = game_state.get_inactive_player()
-        if (attacking_card.uuid not in [card.uuid for card in attacking_player.play_area]):
-            # The attacking card was defeated during the attack ability activation
-            print(f"{attacking_card.name} was defeated during attack ability activation. The attack is cancelled.")
+        if game_state._pending_action in ["play_or_attack", "frenzy_attack"]:
+            # This is the first part of the phase, so activate "Attack" abilities
+            print(f"{attacking_player.id}'s {attacking_card.name} attacks!")
+            game_state._pending_attack_card_uuid = attacking_card.uuid
+            game_state = GameRules.activate_attack_ability(game_state, attacking_card.uuid, self.agents)
             return game_state
+        
+        elif game_state._pending_action == "continue_attack":
+            # This is the second part of the phase, where we resolve the attack
+            if ("Hunter" in GameRules.get_effective_keywords(game_state, attacking_card.uuid)
+                and not game_state._already_hunted):
+                game_state._pending_action = "hunt"
+                return game_state
+            # If there is no Hunter ability or it has already been used, move on to choosing a blocker
+            else:
+                valid_blockers: List[UUID] = []
+                for card in blocking_player.play_area:
+                    if GameRules.is_valid_blocker(
+                        blocking_card_uuid=card.uuid, 
+                        attacking_card_uuid=attacking_card.uuid, 
+                        game_state=game_state,
+                    ):
+                        valid_blockers.append(card.uuid)
+                
+                if not valid_blockers:
+                    game_state._pending_action = "resolve_attack"
+                    return game_state
+                else:
+                    game_state.switch_active_player() # Switch to opponent for blocking decision
+                    game_state._valid_targets = valid_blockers
+                    game_state._pending_action = "block"
+                    return game_state
+        
+        elif game_state._pending_action == "resolve_attack":
+            if not game_state._pending_block_card_uuid:
+                # No blocker was chosen, opponent takes damage
+                print(f"{blocking_player.id} does not block. {attacking_player.id} deals damage directly!")
+                game_state = self.lose_life(game_state, blocking_player.id)
+            else:
+                blocking_card = GameRules.get_card_by_uuid(game_state, game_state._pending_block_card_uuid)
+                if blocking_card not in blocking_player.play_area:
+                    raise ValueError(f"Blocking card {blocking_card.name} not found in {blocking_player.id}'s play area.")
+                print(f"{blocking_card.name} and {attacking_card.name} face each other.")
+                # Resolve combat
+                game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid, self.agents)
+                game_state._pending_block_card_uuid = None # Clear pending block card UUID
+                game_state._already_hunted = False # Reset hunting state
 
-        blocking_card: Optional[Card] = None
-
-        # Activate "Hunter" keyword
-        if "Hunter" in GameRules.get_effective_keywords(game_state, attacking_card.uuid):
-            # Create a choice request
-            choice_request = CardChoiceRequest(
-                player_id=attacking_player.id,
-                options=blocking_player.play_area,
-                min_choices=0,
-                max_choices=min(1, len(blocking_player.play_area)),
-                purpose="hunt",
-                prompt=f"{attacking_player.id}, HUNT an enemy creature that will block the attack (or none)."
-            )
-            # Ask the agent to choose
-            agent = self.agents[attacking_player.id]
-            blocker_list = agent.choose_cards(game_state, choice_request)
-            if blocker_list:
-                blocking_card = blocker_list[0] 
-
-        # If no Hunter ability or no blocker was chosen, check if opponent has a blocker
-        if not blocking_card:
-            valid_blockers = []
-            for card in blocking_player.play_area:
-                if GameRules.is_valid_blocker(
-                    blocking_card_uuid=card.uuid, 
-                    attacking_card_uuid=attacking_card.uuid, 
-                    game_state=game_state,
-                ):
-                    valid_blockers.append(card)
-            
-            # if not valid_blockers:
-            #     # No blockers available, opponent takes damage
-            #     print(f"{blocking_player.id} has no valid blockers. {attacking_player.id} deals damage directly!")
-            #     game_state = self.lose_life(game_state, blocking_player.id)
-            #     game_state = self.end_turn(game_state)  # End turn after attack resolution
-            #     return game_state
-            if valid_blockers:
-                # Opponent has blockers, so they can choose one
-                # Store the attacking card in the game state
-                game_state._pending_attack_card_uuid = attacking_card.uuid 
-                # Create a choice request
-                choice_request = CardChoiceRequest(
-                    player_id=blocking_player.id,
-                    options=valid_blockers,
-                    min_choices=0,
-                    max_choices=1,
-                    purpose="block",
-                    prompt=f"{blocking_player.id}, choose a creature that will BLOCK the attack."
-                )
-                # Ask the agent to choose
-                agent = self.agents[blocking_player.id]
-                blocker_list = agent.choose_cards(game_state, choice_request)
-                if blocker_list:
-                    blocking_card = blocker_list[0] 
-                # Reset the pending attack card
-                del game_state._pending_attack_card_uuid
-
-        if not blocking_card:
-            # No blocker was chosen, opponent takes damage
-            print(f"{blocking_player.id} does not block. {attacking_player.id} deals damage directly!")
-            game_state = self.lose_life(game_state, blocking_player.id)
+            attacking_player = game_state.get_player(attacking_player.id) # Refresh player state after combat resolution
+            attacking_card = GameRules.get_card_by_uuid(game_state, action.attacking_card_uuid)
+            if ("Frenzy" in GameRules.get_effective_keywords(game_state, attacking_card.uuid) 
+                and not game_state._frenzy_active # Ensure Frenzy has not already been activated
+                and attacking_card in attacking_player.play_area # Ensure the card has not been defeated
+            ):
+                game_state._pending_action = "frenzy"
+                game_state._frenzy_active = True
+                return game_state
+            else:
+                game_state._frenzy_active = False
+                game_state._pending_attack_card_uuid = None
+                game_state._pending_block_card_uuid = None
+                game_state._already_hunted = False 
+                game_state = self.end_turn(game_state)
+                return game_state
+        
         else:
-            print(f"{blocking_card.name} and {attacking_card.name} face each other.")
-            # Resolve combat
-            game_state = GameRules.resolve_combat(game_state, attacking_card.uuid, blocking_card.uuid, self.agents)
+            raise ValueError(f"Unknown pending action: {game_state._pending_action}. Cannot handle attack action {action}.")
 
-        # Handle "Frenzy" keyword
-        attacking_player = game_state.get_player(attacking_player.id) # Refresh player state after combat resolution
-        attacking_card = GameRules.get_card_by_uuid(game_state, action.attacking_card_uuid)
-        if ("Frenzy" in GameRules.get_effective_keywords(game_state, attacking_card.uuid) 
-            and not game_state._frenzy_active # Ensure Frenzy has not already been activated
-            and attacking_card in attacking_player.play_area # Ensure the card has not been defeated
-        ):
-            # If the attacking card has Frenzy, it can choose to attack again immediately
-            choice_request = CardChoiceRequest(
-                player_id=attacking_player.id,
-                options=[attacking_card],
-                min_choices=0,
-                max_choices=1,
-                purpose="attack_again",
-                prompt=f"{attacking_card.name} has Frenzy! Do you want to attack again?"
-            )
-            agent = self.agents[attacking_player.id]
-            attack_again = agent.choose_cards(game_state, choice_request)
-            if attack_again:
-                print(f"{attacking_player.id} chooses to attack again with {attacking_card.name}!")
-                game_state._frenzy_active = True # Set Frenzy state to active
-                game_state = self._handle_attack_action(game_state, action) # Recursively handle the attack again
-                game_state._frenzy_active = False # Reset Frenzy state
+    def _handle_block_action(self, game_state: GameState, action: BlockAction) -> GameState:
+        """
+        Handles the blocking action when a player has choose whether to block an attack or not.
+        """
+        blocking_player = game_state.get_active_player()
+        attacking_player = game_state.get_inactive_player()
         
-        if not game_state._frenzy_active:
-            game_state = self.end_turn(game_state)
+        if not game_state._pending_attack_card_uuid:
+            raise ValueError("No pending attack card to block.")
+
+        attacking_card = GameRules.get_card_by_uuid(game_state, game_state._pending_attack_card_uuid)
+
+        if action.blocking_card_uuid:
+            blocking_card = GameRules.get_card_by_uuid(game_state, action.blocking_card_uuid)
+            if blocking_card not in blocking_player.play_area:
+                raise ValueError(f"Blocking card {blocking_card.name} not found in {blocking_player.id}'s play area.")
+            print(f"{blocking_player.id} blocks {attacking_card.name} with {blocking_card.name}.")
+            game_state._pending_block_card_uuid = blocking_card.uuid
+        
+        game_state._pending_action = "resolve_attack"
+        game_state.switch_active_player() # Switch to attacking player to resolve the attack
         return game_state
-
-    # def _handle_block_action(self, game_state: GameState, action: BlockAction) -> GameState:
-    #     """
-    #     Handles the blocking action when a player chooses to block an attack.
-    #     """
-    #     blocking_player = game_state.get_active_player()
-    #     attacking_player = game_state.get_inactive_player()
-        
-    #     if not game_state._pending_attack_card_uuid:
-    #         raise ValueError("No pending attack card to block.")
-
-    #     attacking_card_uuid = game_state._pending_attack_card_uuid
-    #     attacking_card = GameRules.get_card_by_uuid(game_state, attacking_card_uuid)
-
-    #     if action.blocking_card_uuid:
-    #         # If a blocking card is specified, find it in the player's play area
-    #         blocking_card_uuid = action.blocking_card_uuid
-    #         blocking_card = GameRules.get_card_by_uuid(game_state, blocking_card_uuid)
-    #         if blocking_card not in blocking_player.play_area:
-    #             raise ValueError(f"Blocking card {blocking_card.name} not found in {blocking_player.id}'s play area.")
-    #         print(f"{blocking_player.id} blocks {attacking_card.name} with {blocking_card.name}.")
-    #     else:
-    #         # No blocking card specified, so no block occurs
-    #         print(f"{blocking_player.id} does not block the attack from {attacking_player.id}.")
-    #         return self.lose_life(game_state, attacking_player.id)
 
     def _handle_defeat_action(self, game_state: GameState, action: DefeatAction) -> GameState:
         """
@@ -345,7 +331,7 @@ class GameEngine:
         game_state._valid_targets = None
         game_state._amount_of_targets = None
 
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
         
     def _handle_steal_action(self, game_state: GameState, action: StealAction) -> GameState:
@@ -374,7 +360,7 @@ class GameEngine:
         game_state._valid_targets = None
         game_state._amount_of_targets = None
 
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
     
     def _handle_discard_action(self, game_state: GameState, action: DiscardAction) -> GameState:
@@ -397,7 +383,55 @@ class GameEngine:
         game_state._valid_targets = None
         game_state._amount_of_targets = None
 
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
+        return game_state
+
+    def _handle_hunt_action(self, game_state: GameState, action: HuntAction) -> GameState:
+        """
+        Handles the hunt action when a player chooses to hunt a card.
+        """
+        player = game_state.get_active_player()
+        opponent = game_state.get_inactive_player()
+        if action.player_id != player.id:
+            raise ValueError(f"Action player {action.player_id} is not the active player {player.id}.")
+        
+        if action.card_uuid is None:
+            game_state._already_hunted = True
+            game_state._pending_action = "continue_attack"
+
+        elif action.card_uuid not in [card.uuid for card in opponent.play_area]:
+            raise ValueError(f"Card with UUID {action.card_uuid} not found in {opponent.id}'s play area.")
+        
+        else: 
+            game_state._pending_block_card_uuid = action.card_uuid
+            game_state._already_hunted = True
+            game_state._pending_action = "resolve_attack"
+            # Clear the auxiliary variables used for hunting
+            game_state._valid_targets = None
+        
+        return game_state
+
+    def _handle_frenzy_action(self, game_state: GameState, action: FrenzyAction) -> GameState:
+        """
+        Handles the frenzy action when a player chooses to activate Frenzy or not.
+        """
+        player = game_state.get_active_player()
+
+        if action.player_id != player.id:
+            raise ValueError(f"Action player {action.player_id} is not the active player {player.id}.")
+        if not game_state._pending_attack_card_uuid:
+            raise ValueError("No pending attack card UUID found in game state to activate Frenzy.")
+        attacking_card = GameRules.get_card_by_uuid(game_state, game_state._pending_attack_card_uuid)
+        if "Frenzy" not in GameRules.get_effective_keywords(game_state, attacking_card.uuid):
+            raise ValueError(f"{attacking_card.name} does not have Frenzy ability.")
+
+        if action.go_again:
+            print(f"{player.id} activates Frenzy on {attacking_card.name}!")
+            game_state._pending_action = "frenzy_attack"
+            game_state._frenzy_active = True
+        else:
+            game_state = self.end_turn(game_state)
+
         return game_state
 
     # --- End Turn ---
@@ -410,25 +444,25 @@ class GameEngine:
         print(f"Turn {game_state.turn_count} ended.\n")
         game_state.switch_active_player() # Switch active player
         game_state.turn_count += 1 # Increment turn count
-        game_state.pending_action = "play_or_attack" # Go back to play/attack phase
+        game_state._pending_action = "play_or_attack" # Go back to play/attack phase
 
         return game_state
 
     # --- Check of possible actions ---
 
-    def get_valid_actions(self, game_state: GameState) -> List[Dict[str, Action | str | List[str]]]:
+    def get_valid_actions(self, game_state: GameState) -> List[Dict[str, Any]]:
         """
         Determines all legal actions the active player can take in the current game state.
         This is critical for AI and human input validation.
         """
-        valid_actions = []
+        valid_actions: List[Dict[str, Any]] = []
         active_player = game_state.get_active_player()
         inactive_player = game_state.get_inactive_player()
 
         if game_state.game_over:
             return []
 
-        if game_state.pending_action == "mindbug":
+        if game_state._pending_action == "mindbug":
             # During the mindbug phase, the active player must choose whether to use a mindbug or not.
             if active_player.mindbugs:
                 if game_state._pending_mindbug_card_uuid:
@@ -440,7 +474,7 @@ class GameEngine:
                                       'card_name': card_name})
             valid_actions.append({'action': PassMindbugAction(active_player.id)})
 
-        elif game_state.pending_action == "play_or_attack":
+        elif game_state._pending_action == "play_or_attack":
             # During the play phase, the active player can play a card or attack with a card on the play area.
             for card in active_player.hand:
                 valid_actions.append({'action': PlayCardAction(active_player.id, card.uuid),
@@ -449,10 +483,16 @@ class GameEngine:
                 valid_actions.append({'action': AttackAction(active_player.id, card.uuid),
                                       'card_name': card.name})
                 
-        elif game_state.pending_action == "block":
-            pass
+        elif game_state._pending_action == "block":
+            # During the block phase, the active player can choose to block an attack with one of their cards.
+            if not game_state._valid_targets:
+                raise ValueError("No valid targets for blocking action.")
+            for card_uuid in game_state._valid_targets:
+                valid_actions.append({'action': BlockAction(active_player.id, card_uuid),
+                                      'card_name': GameRules.get_card_by_uuid(game_state, card_uuid).name})
+            valid_actions.append({'action': BlockAction(active_player.id, None)})
 
-        elif game_state.pending_action == "steal":
+        elif game_state._pending_action == "steal":
             # During the steal phase, the active player can choose to steal cards among the valid targets.
             if not game_state._valid_targets:
                 raise ValueError("No valid targets for stealing action.")
@@ -471,7 +511,7 @@ class GameEngine:
                 valid_actions.append({'action': StealAction(active_player.id, target_list),
                                       'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
                 
-        elif game_state.pending_action == "discard":
+        elif game_state._pending_action == "discard":
             # During the discard phase, the active player can choose which cards from hand to discard.
             if not game_state._valid_targets:
                 raise ValueError("No valid targets for stealing action.")
@@ -490,7 +530,7 @@ class GameEngine:
                 valid_actions.append({'action': DiscardAction(active_player.id, target_list),
                                       'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
                 
-        elif game_state.pending_action == "defeat":
+        elif game_state._pending_action == "defeat":
             # During the discard phase, the active player can choose which cards to defeat.
             if not game_state._valid_targets:
                 raise ValueError("No valid targets for stealing action.")
@@ -509,7 +549,7 @@ class GameEngine:
                 valid_actions.append({'action': DefeatAction(active_player.id, target_list),
                                       'card_names': [GameRules.get_card_by_uuid(game_state, uuid).name for uuid in target_list]})
             
-        elif game_state.pending_action == "play_from_discard":
+        elif game_state._pending_action == "play_from_discard":
             # During the play from discard phase, the active player can play cards 
             # either from their discard pile or from the opponent's discard pile.
             if not game_state._valid_targets:
@@ -522,9 +562,31 @@ class GameEngine:
             for card_uuid in game_state._valid_targets:
                 valid_actions.append({'action': PlayFromDiscardAction(active_player.id, card_uuid),
                                       'card_name': GameRules.get_card_by_uuid(game_state, card_uuid).name})
+                
+        elif game_state._pending_action == "hunt":
+            # During the hunt phase, the active player can choose to hunt a card from the opponent's play area.
+            if not game_state._valid_targets:
+                raise ValueError("No valid targets for hunting action.")
+            
+            for card_uuid in game_state._valid_targets:
+                valid_actions.append({'action': HuntAction(active_player.id, card_uuid),
+                                      'card_name': GameRules.get_card_by_uuid(game_state, card_uuid).name})
+                
+        elif game_state._pending_action == "frenzy":
+            # During the frenzy phase, the active player can choose to activate Frenzy or not.
+            if not game_state._pending_attack_card_uuid:
+                raise ValueError("No pending attack card UUID found in game state to activate Frenzy.")
+            attacking_card = GameRules.get_card_by_uuid(game_state, game_state._pending_attack_card_uuid)
+            if "Frenzy" in GameRules.get_effective_keywords(game_state, attacking_card.uuid):
+                valid_actions.append({'action': FrenzyAction(active_player.id, go_again=True),
+                                      'card_name': attacking_card.name})
+                valid_actions.append({'action': FrenzyAction(active_player.id, go_again=False),
+                                      'card_name': attacking_card.name})
+            else:
+                raise ValueError(f"{attacking_card.name} does not have Frenzy ability.")
 
         else:
-            raise ValueError(f"Unknown pending action: {game_state.pending_action}. Cannot determine valid actions.")
+            raise ValueError(f"Unknown pending action: {game_state._pending_action}. Cannot determine valid actions.")
 
         # General rule: a player must take an action. If they cannot, they lose.
         if not valid_actions and not game_state.game_over:
@@ -601,10 +663,19 @@ class GameEngine:
         }
 
         while not game_state.game_over:
-            if game_state.pending_action == "finish_action":
+            if game_state._pending_action == "finish_action":
                 if game_state._switch_active_player_back:
                     game_state.switch_active_player()
                 game_state = self.end_turn(game_state)
+                continue
+                
+            if game_state._pending_action in ["continue_attack", "resolve_attack", "frenzy_attack"]:
+                if not game_state._pending_attack_card_uuid:
+                    raise ValueError("No pending attack card UUID found in game state to continue attack action.")
+                attack_card = GameRules.get_card_by_uuid(game_state, game_state._pending_attack_card_uuid)
+                if not attack_card.controller:
+                    raise ValueError(f"Attack card {attack_card.name} has no controller.")
+                game_state = self.apply_action(game_state, AttackAction(attack_card.controller.id, attack_card.uuid))
                 continue
 
             active_player_id = game_state.active_player_id

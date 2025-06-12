@@ -132,7 +132,7 @@ def activate_play_ability(game_state: GameState, card_played_uuid: UUID, agents:
         if handler:
             game_state = handler(copy.deepcopy(game_state), card_played_uuid, agents)
     else:
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
     return game_state
 
 def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -145,6 +145,8 @@ def activate_attack_ability(game_state: GameState, attacking_card_uuid: UUID, ag
         handler = attack_ability_handlers.get(attacking_card.id)
         if handler:
             game_state = handler(copy.deepcopy(game_state), attacking_card_uuid, agents)
+    else:
+        game_state._pending_action = "continue_attack"
     return game_state
 
 def activate_defeated_ability(game_state: GameState, defeated_card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -176,7 +178,7 @@ def _axolotl_healer_play_ability(game_state: GameState, card_uuid: UUID, agents:
     # Player gains 2 life
     player.life_points += 2
     print(f"{player.id} gains 2 life points. New life: {player.life_points}")
-    game_state.pending_action = "finish_action"
+    game_state._pending_action = "finish_action"
 
     return game_state
 
@@ -197,10 +199,10 @@ def _brain_fly_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict
 
     if not valid_targets:
         print(f"No valid creatures with power 6 or more to take control of.")
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
     
-    game_state.pending_action = "steal"
+    game_state._pending_action = "steal"
     game_state._valid_targets = [card.uuid for card in valid_targets]
     game_state._amount_of_targets = 1
 
@@ -217,10 +219,10 @@ def _compost_dragon_play_ability(game_state: GameState, card_uuid: UUID, agents:
     valid_targets = [card.uuid for card in player.discard_pile]
     if not valid_targets:
         print(f"{player.id} has no cards in discard pile to play.")
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
     
-    game_state.pending_action = "play_from_discard"
+    game_state._pending_action = "play_from_discard"
     game_state._valid_targets = valid_targets
     game_state._amount_of_targets = 1
 
@@ -236,10 +238,10 @@ def _ferret_bomber_play_ability(game_state: GameState, card_uuid: UUID, agents: 
 
     if not opponent.hand:
         print(f"{opponent.id} has no cards in hand, cannot discard.")
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
 
-    game_state.pending_action = "discard"
+    game_state._pending_action = "discard"
     game_state.switch_active_player()
     game_state._switch_active_player_back = True
     game_state._valid_targets = [card.uuid for card in opponent.hand]
@@ -266,7 +268,7 @@ def _giraffodile_play_ability(game_state: GameState, card_uuid: UUID, agents: Di
         card.controller = player  # Ensure the controller is set correctly
         print(f"{player.id} draws {card.name} from their discard pile.")
 
-    game_state.pending_action = "finish_action"
+    game_state._pending_action = "finish_action"
     return game_state
 
 def _grave_robber_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -281,10 +283,10 @@ def _grave_robber_play_ability(game_state: GameState, card_uuid: UUID, agents: D
     valid_targets = [card.uuid for card in opponent.discard_pile]
     if not valid_targets:
         print(f"{opponent.id} has no cards in discard pile to play.")
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
 
-    game_state.pending_action = "play_from_discard"
+    game_state._pending_action = "play_from_discard"
     game_state._valid_targets = valid_targets
     game_state._amount_of_targets = 1
 
@@ -303,7 +305,7 @@ def _kangasaurus_rex_play_ability(game_state: GameState, card_uuid: UUID, agents
             print(f"{card.name} (P={effective_power}) is defeated by Kangasaurus Rex.")
             game_state = defeat(game_state, card.uuid)
 
-    game_state.pending_action = "finish_action"
+    game_state._pending_action = "finish_action"
     return game_state
 
 def _killer_bee_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -324,7 +326,7 @@ def _killer_bee_play_ability(game_state: GameState, card_uuid: UUID, agents: Dic
         game_state.winner_id = player.id
         print(f"{opponent.id} has no life points left! {game_state.winner_id} wins!")
 
-    game_state.pending_action = "finish_action"
+    game_state._pending_action = "finish_action"
     return game_state
 
 def _mysterious_mermaid_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -340,7 +342,7 @@ def _mysterious_mermaid_play_ability(game_state: GameState, card_uuid: UUID, age
     player.life_points = opponent.life_points
     print(f"{player.id}'s life points are now set to {player.life_points}.")
 
-    game_state.pending_action = "finish_action"
+    game_state._pending_action = "finish_action"
     return game_state
 
 def _tiger_squirrel_play_ability(game_state: GameState, card_uuid: UUID, agents: Dict[str, BaseAgent] = {}) -> GameState:
@@ -360,10 +362,10 @@ def _tiger_squirrel_play_ability(game_state: GameState, card_uuid: UUID, agents:
 
     if not valid_targets:
         print(f"No valid creatures with power 7 or more to defeat.")
-        game_state.pending_action = "finish_action"
+        game_state._pending_action = "finish_action"
         return game_state
     
-    game_state.pending_action = "defeat"
+    game_state._pending_action = "defeat"
     game_state._valid_targets = [card.uuid for card in valid_targets]
     game_state._amount_of_targets = 1
     
