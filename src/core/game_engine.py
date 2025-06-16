@@ -9,7 +9,7 @@ from src.agents.base_agent import BaseAgent
 class GameEngine:
     def __init__(
             self,
-            all_cards: List[Card], 
+            all_cards: List[Card] = [], 
             deck_size: int = 10, 
             hand_size: int = 5, 
             agents: Dict[str, BaseAgent] = {}
