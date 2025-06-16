@@ -5,7 +5,6 @@ from typing import List, Dict
 from src.models.game_state import GameState
 from src.models.card import Card
 from src.agents.base_agent import BaseAgent
-from src.models.action import CardChoiceRequest
 
 # --- Core Game Logic Functions ---
 
@@ -54,17 +53,18 @@ def defeat(game_state: GameState, card_uuids: UUID | List[UUID], agents: Dict[st
             defeated_cards_with_defeated_abilities = [
                 card for card in defeated_cards if card.ability_type == "defeated"
             ]
-            if len(defeated_cards_with_defeated_abilities) > 1:
-                choice_request = CardChoiceRequest(
-                    player_id=game_state.active_player_id,
-                    options=defeated_cards_with_defeated_abilities,
-                    min_choices=len(defeated_cards_with_defeated_abilities),
-                    max_choices=len(defeated_cards_with_defeated_abilities),
-                    purpose="defeat_order",
-                    prompt="Choose the order of defeated abilities to activate."
-                )
-                agent = agents[game_state.active_player_id]
-                defeated_cards_with_defeated_abilities = agent.choose_cards(game_state, choice_request)
+            # RIGHT NOW WE DO NOT ASK FOR CHOICE OF ORDER, THIS NEEDS TO BE IMPLEMENTED
+            # if len(defeated_cards_with_defeated_abilities) > 1:
+            #     choice_request = CardChoiceRequest(
+            #         player_id=game_state.active_player_id,
+            #         options=defeated_cards_with_defeated_abilities,
+            #         min_choices=len(defeated_cards_with_defeated_abilities),
+            #         max_choices=len(defeated_cards_with_defeated_abilities),
+            #         purpose="defeat_order",
+            #         prompt="Choose the order of defeated abilities to activate."
+            #     )
+            #     agent = agents[game_state.active_player_id]
+            #     defeated_cards_with_defeated_abilities = agent.choose_cards(game_state, choice_request)
             for card in defeated_cards_with_defeated_abilities:
                 game_state = activate_defeated_ability(game_state, card.uuid, agents)
     return game_state

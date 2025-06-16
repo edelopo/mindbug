@@ -89,20 +89,3 @@ class FrenzyAction(Action):
 
     def __repr__(self):
         return (f"FrenzyAction(Player: {self.player_id}, Go again: {self.go_again})")
-
-class CardChoiceRequest:
-    def __init__(
-        self,
-        player_id: str,
-        options: List[Card],
-        min_choices: int,
-        max_choices: int,
-        purpose: str,  # e.g., "steal", "destroy", "play"
-        prompt: Optional[str] = None
-    ):
-        self.player_id = player_id
-        self.options = options
-        self.min_choices = min_choices
-        self.max_choices = max_choices
-        self.purpose = purpose
-        self.prompt = prompt or f"Choose {min_choices}-{max_choices} card(s) to {purpose}."
